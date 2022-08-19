@@ -53,12 +53,12 @@ EigenARCH_loglikelihood_cont <- function(x, param, n){
     loglike[i] = -p/2*log(2*pi) - 1/2*sum(log(lambda[,i])) - 1/2*t(y[,i]) %*% diag(1/lambda[,i]) %*% y[,i];
   }
   
-  persistence = max(eigen(alpha+beta)$values); # persistence of stochastic process
+  #persistence = max(eigen(alpha+beta)$values); # persistence of stochastic process
   
   log_likelihood <- list(loglike = loglike, 
                          sigma2 = sigma2, 
-                         lambda = lambda, 
-                         persistence = persistence)
+                         lambda = lambda)
+                         #persistence = persistence)
   
   return(log_likelihood)
 }
