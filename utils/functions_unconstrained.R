@@ -1,39 +1,27 @@
-EigenARCH_optimizer <- function(param, tol = 1e-8, maxfeval = 3*10e4, maxiter = 10e5){
-  
-  # set optimizer bounds for constrained optimization
-  lb <- c(rep(1e-10,p*(p-1)/2), 
-          rep(1e-10,p), 
-          rep(1e-10,n*p), 
-          rep(1e-10,n*p), 
-          rep(1e-10,(p-n)*n))
-  
-  ub <- c(rep(pi/2, p*(p-1)/2), 
-          rep(100, p), 
-          rep(100, n*p), 
-          rep(100, n*p),
-          rep(0, (p-n)*n))
+EigenARCH_optimizer_unconstrained <- function(param, tol = 1e-10, maxfeval = 3*10e4, maxiter = 10e5){
   
   # solution
-  solution <- fmincon(theta0, EigenARCH_loglikelihood,
-                        lb = lb,
-                        ub = ub,
-                        tol = tol,
-                        maxfeval = maxfeval)
+  solution <- optim(par = theta0, 
+                    fn = EigenARCH_loglikelihood_unconstrained,
+                    method = 'Nelder-Mead',
+                    lower = -Inf,
+                    upper = Inf,
+                    hessian = TRUE)
   
   return(solution)
 }
 
 
-EigenARCH_loglikelihood <- function(param){
+EigenARCH_loglikelihood_unconstrained <- function(param){
   # log-likelihood function
   
-  loglikelihood_fct <- EigenARCH_loglikelihood_cont(x = x, param, n = n)
+  loglikelihood_fct <- EigenARCH_loglikelihood_cont_unconstrained(x = x, param, n = n)
   L <- mean(loglikelihood_fct$loglike)
 
   return(-L)
 }
 
-EigenARCH_loglikelihood_cont <- function(x, param, n){
+EigenARCH_loglikelihood_cont_unconstrained <- function(x, param, n){
 
   # Log likelihood contributions for the EigenARCH(1,1) moodel
     # Inputs: 
@@ -51,7 +39,7 @@ EigenARCH_loglikelihood_cont <- function(x, param, n){
   p = nrow(x);
   
   # Fetch reparametrized parameter matrices
-  parameter_list = EigenARCH_repar(p, n, param) 
+  parameter_list = EigenARCH_repar_unconstrained(p, n, param) 
   
   V = parameter_list$eigenvectors
   omega = parameter_list$omega %>% as.matrix()
@@ -89,34 +77,35 @@ EigenARCH_loglikelihood_cont <- function(x, param, n){
   return(log_likelihood)
 }
 
-EigenARCH_repar <- function(p, n, param){
-# Function to reparameterize the parameter-vector to the matrices
-
+EigenARCH_repar_unconstrained <- function(p, n, param){
+  # Function to reparameterize the parameter-vector to the matrices
+  
   count <- 1
   
-  # Eigenvectors
+  # Reparametrized eigenvectors
   phi <- param[count:(count + p*(p-1)/2-1)]
-  count <- count+p*(p-1)/2
+  phi <- exp(phi)/(1+exp(phi))*pi/2# reparametrized phi
   V   <- rotation(phi,p) # Rotation matrix
-
-  # Constant
-  omega <- param[count:(count+p-1)]
+  count <- count+p*(p-1)/2
+  
+  # Reparametrized constant
+  omega <- exp(param[count:(count+p-1)])
   count <- count+p
   
   # Reduced rank matrices
-  a <- matrix(param[count:(count+p*n-1)], ncol=n, byrow = TRUE)
+  a <- matrix(param[count:(count+p*n-1)], ncol=n, byrow = TRUE)^2
   count <- count + p*n
   
   if(p == n){
     g = diag(1,n)
   } else{
     g <- matrix(0,p,n)
-    g[1:(p-n),] <- matrix(param[count:(count+(p-n)*n-1)], ncol=n, byrow = TRUE) # FIRST ROW FREE
+    g[1:(p-n),] <- matrix(param[count:(count+(p-n)*n-1)], ncol=n, byrow = TRUE)^2 # FIRST ROW FREE
     g[(p-n+1):end,] <- diag(n,n)
     count <- count+(p-n)*n     
   }
   
-  b <- matrix(param[count:(count+p*n-1)],ncol=n,nrow=p, byrow = TRUE);
+  b <- matrix(param[count:(count+p*n-1)],ncol=n,nrow=p, byrow = TRUE)^2
   count <- count+p*n;
   
   alpha <- g %*% t(a); 
@@ -128,32 +117,5 @@ EigenARCH_repar <- function(p, n, param){
                 beta = beta)
   
   return(repar)
-}
-
-rotation <- function(angle, p){
-  
-  # ROTATION Returns a pxp rotation matrix constructed in the same way as in the GO-GARCH paper by van der Weide (2002).
-  
-  # allocate storage for rotation matrix
-  rot = diag(p)
-
-  # Parameter counter
-  tal = 1
-  
-  for (i in 1:(p-1)){
-    for (j in (i+1):p){
-      #Construct pxp matrix with 2x2 rotation spanning one dimension
-      help <- diag(p)
-      help[i,i] <- cos(angle[tal])
-      help[j,j] <- cos(angle[tal])
-      help[i,j] <- sin(angle[tal])
-      help[j,i] <- -sin(angle[tal])
-      
-      #update rotation
-      rot = rot %*% help
-      tal = tal +1 # update parameter counter
-    }
-  }
-  return(rot)
 }
 

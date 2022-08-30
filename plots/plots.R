@@ -1,5 +1,6 @@
 library(tidyverse)
 library(janitor)
+library(gridExtra)
 source('plots/plots_functions.R')
 
 # load data
@@ -14,23 +15,36 @@ returns <- readxl::read_excel("data/12072022_embig_data.xlsx", sheet = "Returns"
 ###############################################################################
 
 # across regions
-returns %>% 
+returns_regions <- returns %>% 
   filter(!(Group %in%  c('HY','IG'))) %>%
   ggplot() + aes(x = Date, y = Return, color = Group) +
   geom_line() +
   theme_classic() +
   ylab('Daily total log-return (%)') +
-  xlab('')
+  xlab('') + 
+  theme(legend.position="bottom",
+  legend.margin=margin(t=-25),
+  legend.title=element_blank(),
+  legend.text=element_text(size=6.5))
 
 # across rating categories
-returns %>% 
+returns_ratings <- returns %>% 
   filter(Group %in%  c('HY','IG')) %>%
+  mutate(Group = replace(Group, 
+                         Group == 'HY', 'High Yield')) %>%
+  mutate(Group = replace(Group, 
+                         Group == 'IG', 'Investment Grade')) %>%
   ggplot() + aes(x = Date, y = Return, color = Group) +
   geom_line() +
   theme_classic() +
   ylab('Daily total log-return (%)') +
-  xlab('')
+  xlab('') +
+  theme(legend.position="bottom",
+        legend.margin=margin(t=-25),
+        legend.title=element_blank(),
+        legend.text=element_text(size=6.5))
 
+grid.arrange(returns_regions, returns_ratings, ncol = 2) 
 
 ###############################################################################
 # autocorrelation function plots
