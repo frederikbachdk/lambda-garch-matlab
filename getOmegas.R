@@ -2,6 +2,7 @@
 library(tidyverse)
 library(matlib)
 library(tictoc)
+library(alabama)
 
 # turn off scinumbers, clear console and memory
 options(scipen=999) 
@@ -61,5 +62,6 @@ for(t in 4435:5868){
 
 # estimate Omegas out of sample
 condCovariances <- lapply(1:5868, function(t) V %*% diag(condEigenvals[t,2:6]) %*% inv(V)) 
+names(condCovariances) <- data$Date
 
-rm(list=setdiff(ls(), c('data','condCovariances','condEigenvals')))
+rm(list=setdiff(ls(), c('data','condCovariances','condEigenvals','p','n', 'x')))
