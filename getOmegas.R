@@ -23,11 +23,11 @@ data <- readxl::read_excel('data/12072022_embig_data.xlsx', sheet = 'Returns') %
 x <- data %>% select(-Date) %>% as.matrix()
 p <- n <- ncol(x)
 
-Lambda <- readxl::read_excel("matlab/condEigenvalues.xlsx") %>% as.matrix()
+Lambda <- readxl::read_excel("data/condEigenvalues.xlsx") %>% as.matrix()
 colnames(Lambda) <- c('lambda1','lambda2','lambda3','lambda4','lambda5')
 
 # QMLE parameters from MATLAB
-theta <- readxl::read_excel("matlab/theta_unrestricted.xlsx") %>% as.matrix() %>% t()
+theta <- readxl::read_excel("data/theta_unrestricted.xlsx") %>% as.matrix() %>% t()
 
 # Reparametrization of theta, save in individual matrices
 parameters <- EigenARCH_repar_unconstrained(p, n, theta)
