@@ -1,29 +1,3 @@
-EigenARCH_optimizer <- function(param, tol = 1e-8, maxfeval = 3*10e4, maxiter = 10e5){
-  
-  # set optimizer bounds for constrained optimization
-  lb <- c(rep(1e-10,p*(p-1)/2), 
-          rep(1e-10,p), 
-          rep(1e-10,n*p), 
-          rep(1e-10,n*p), 
-          rep(1e-10,(p-n)*n))
-  
-  ub <- c(rep(pi/2, p*(p-1)/2), 
-          rep(100, p), 
-          rep(100, n*p), 
-          rep(100, n*p),
-          rep(0, (p-n)*n))
-  
-  # solution
-  solution <- fmincon(theta0, EigenARCH_loglikelihood,
-                        lb = lb,
-                        ub = ub,
-                        tol = tol,
-                        maxfeval = maxfeval)
-  
-  return(solution)
-}
-
-
 EigenARCH_loglikelihood <- function(param){
   # log-likelihood function
   
