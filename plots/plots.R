@@ -7,8 +7,8 @@ source('plots/plots_functions.R')
 returns <- readxl::read_excel("data/12072022_embig_data.xlsx", sheet = "Returns") %>%
   mutate(Date = as.Date(Date)) %>%
   pivot_longer(cols = c(-Date), 
-               names_to = 'Group',
-               values_to = 'Return')
+               names_to = 'region',
+               values_to = 'log_ret')
 
 ###############################################################################
 # visualize daily total return
@@ -16,8 +16,8 @@ returns <- readxl::read_excel("data/12072022_embig_data.xlsx", sheet = "Returns"
 
 # across regions
 returns_regions <- returns %>% 
-  filter(!(Group %in%  c('HY','IG'))) %>%
-  ggplot() + aes(x = Date, y = Return, color = Group) +
+  filter(!(region %in%  c('HY','IG'))) %>%
+  ggplot() + aes(x = Date, y = log_ret, color = region) +
   geom_line() +
   theme_classic() +
   ylab('Daily total log-return (%)') +
@@ -29,12 +29,12 @@ returns_regions <- returns %>%
 
 # across rating categories
 returns_ratings <- returns %>% 
-  filter(Group %in%  c('HY','IG')) %>%
-  mutate(Group = replace(Group, 
-                         Group == 'HY', 'High Yield')) %>%
-  mutate(Group = replace(Group, 
-                         Group == 'IG', 'Investment Grade')) %>%
-  ggplot() + aes(x = Date, y = Return, color = Group) +
+  filter(region %in%  c('HY','IG')) %>%
+  mutate(region = replace(region, 
+                          region == 'HY', 'High Yield')) %>%
+  mutate(region = replace(region, 
+                         region == 'IG', 'Investment Grade')) %>%
+  ggplot() + aes(x = Date, y = log_ret, color = region) +
   geom_line() +
   theme_classic() +
   ylab('Daily total log-return (%)') +
@@ -52,8 +52,8 @@ grid.arrange(returns_regions, returns_ratings, ncol = 2)
 
 # example with returns, absolute and squared returns
 acf_plot(x = returns, region = 'Asia', lag.max = 20)
-acf_plot(x = returns %>% mutate(Return = abs(Return)), region = 'Europe', lag.max = 20)
-acf_plot(x = returns %>% mutate(Return = Return^2), region = 'Europe', lag.max = 20)
+acf_plot(x = returns %>% mutate(log_ret = abs(log_ret)), region = 'Europe', lag.max = 20)
+acf_plot(x = returns %>% mutate(log_ret = log_ret^2), region = 'Europe', lag.max = 20)
 
 ###############################################################################
 # density plots

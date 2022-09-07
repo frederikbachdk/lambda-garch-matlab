@@ -14,11 +14,13 @@ source('getOmegas.R')
 ### portfolio optimization ###
 #############################################################################
 
-# start portfolio optimization at 2017-01-02
+# start portfolio optimization at 2017-01-02 with 100 USD wealth
+w_initial <- 100
 
 # define risk free rate etc.. to do - maybe USTs
 iota <- rep(1,p)
-Omega <- condCovariances[[4435]]
+
+Omega <- condCovariances[[4433]]
 minimumVariance <- (inv(Omega) %*% iota)/sum(inv(Omega) %*% iota)
 
 # calculate rolling returns incl. drift adjustment in weight vector

@@ -3,8 +3,8 @@ acf_plot <- function(x, region, lag.max = 30){
   # function to plot ACFs.
   # input: TBC
   # output: TBC
-  x <- x %>% filter(Group == region) %>%
-    select(Return)
+  x <- x %>% filter(region == region) %>%
+    select(log_ret)
   
   # filter data based on user choice
   acf <- x %>% na.omit() %>% 
