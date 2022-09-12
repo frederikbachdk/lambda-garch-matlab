@@ -25,7 +25,7 @@ V <- matrix(c(cos(phi), -sin(phi),
               sin(phi), cos(phi)), 
               nrow=p, ncol=p)  # Rotation matrix
 W <- matrix(c(0.08, 0.03), nrow=p, ncol=1)
-A <- matrix(c(0.02, 0.02, 0.02, 0.02), nrow=p, ncol=p)       # ARCH
+A <- matrix(c(0.03, 0.03, 0.003, 0.03), nrow=p, ncol=p)       # ARCH
 B <- matrix(c(0.7, 0.5, 0.35, 0.27), nrow=p, ncol=p)        # GARCH
 max(abs(eigen(A+B)$values))                                  # Stationarity condition
 
@@ -59,5 +59,5 @@ for(t in 2:N+1){
   GARCHsim[t,4:5] <- V %*% diag(as.vector(sqrt(GARCHsim[t,6:7]))) %*% t(GARCHsim[t, 2:3])
 }
 
-
-GARCHsim %>% select(t, X2) %>% ggplot() + aes(x = t, y = X2) + geom_line()
+GARCHsim %>% select(t, X1) %>% ggplot() + aes(x = t, y = X1) + geom_line()
+GARCHsim %>% select(t, eta1) %>% ggplot() + aes(x = t, y = eta1) + geom_line()
