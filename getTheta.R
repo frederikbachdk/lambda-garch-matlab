@@ -19,8 +19,8 @@ source('utils/matrix_functions.R')
 #############################################################################
 ### define sample period ###
 #############################################################################
-estimation_start <- as.Date('2010-01-04')
-estimation_end <- as.Date('2019-12-31')
+estimation_start <- as.Date('2010-01-01')
+estimation_end <- as.Date('2018-12-31')
 
 #############################################################################
 ### load data ###
@@ -33,7 +33,6 @@ data <- readxl::read_excel('data/07092022_embig_data.xlsx', sheet = 'Returns') %
 
 x <- data %>% filter(Date <= estimation_end) %>%
   select(-Date) %>% as.matrix() %>% t()
-
 
 x_full <- data %>% select(-Date) %>% as.matrix() %>% t()
 N <- ncol(x_full)
@@ -59,14 +58,19 @@ ub <- c(rep(pi/2, p*(p-1)/2),
         rep(0, (p-n)*n))
 
 # solution
-tic('solver')
+print('Model: λ-GARCH for the sample period: 2010-01-01 until 2018-12-31')
+print('.............................................')
+print('maximizing the log-likelihood function.......')
+tic('optimization procedure')
 solution <- fmincon(theta0, EigenARCH_loglikelihood,
                     lb = lb,
                     ub = ub,
                     tol = 1e-12, 
                     maxfeval = 3*10e4, 
                     maxiter = 10e5)
+
 toc()
+print('maximization complete')
 
 # save theta vector
 theta <- solution$par

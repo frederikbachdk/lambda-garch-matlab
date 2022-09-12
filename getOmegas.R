@@ -3,7 +3,7 @@ options(scipen=999)
 cat('\014')
 
 # import functions
-source('utils/getTheta.R') # fetches data and estimates theta
+source('getTheta.R') # fetches data and estimates theta
 
 #Lambda <- readxl::read_excel("data/condEigenvalues.xlsx") %>% as.matrix()
 L <- EigenARCH_loglikelihood(theta)
@@ -50,3 +50,6 @@ condCovariances <- lapply(1:ncol(x_full),
                           ) 
 
 names(condCovariances) <- data$Date
+
+# calculate sample covariance matrix
+sampleCovariance <- cov(t(x))
