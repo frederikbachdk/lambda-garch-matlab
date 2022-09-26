@@ -28,7 +28,7 @@ estimation_end <- as.Date('2018-12-31')
 
 data <- readxl::read_excel('data/07092022_embig_data.xlsx', sheet = 'Returns') %>%
   mutate(Date = as.Date(Date)) %>%
-  select(Date, Asia, CEEMEA, 'Latin America') %>%
+  select(Date, Africa, Asia, Europe, 'Middle East', 'Latin America') %>%
   filter(Date >= estimation_start)
 
 x <- data %>% filter(Date <= estimation_end) %>%

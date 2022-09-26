@@ -407,7 +407,7 @@ performance %>%
   )
 
 performance %>%
-  ggplot(aes(x = ., y = net_return, color = factor(strategy)) +
+  ggplot(aes(x = ., y = net_return, color = factor(strategy))) +
   geom_line()
 
 mtcars <- mtcars
