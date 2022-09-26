@@ -5,11 +5,12 @@ library(gridExtra)
 library(lemon)
 library(ggplotify)
 library(forecast)
+library(dplyr)
 source('plots/plots_functions.R')
 
 ### IMPORT DATA ###
-regions <- c('Date', 'IG', 'HY','Africa', 'Asia', 'Europe', 'Latin America', 'Middle East')
-data <- readxl::read_excel('data/12072022_embig_data.xlsx', sheet = 'Returns')
+regions <- c('Date','IG','HY','Europe','Middle East','Africa','Asia','CEEMEA','Latin America')
+data <- readxl::read_excel('data/07092022_embig_data.xlsx', sheet = 'Returns')
 data <- data %>% mutate(Date = as.Date(data$Date))
 
 colnames(data) <- regions
@@ -132,4 +133,63 @@ covmat <- data %>% select(-period) %>%
 eig <- eigen(covmat)
 100*eig$values/sum(eig$values)
 eig$vectors
+
+
+###############################################################################
+# correlation plots
+###############################################################################
+# import data
+data_x <- readxl::read_excel('data/covariates.xlsx', sheet = 'Indeces')
+data_x <- data_x %>% mutate(Date = as.Date(data_x$Date))
+indeces <- c('Date','BCOM','BCOMTR','BCOMIN','BCOMAG','BCOMEN','BCOIL','WCOIL','USGG10YR','BBDXY','JPEIDIVR')
+colnames(data_x) <- indeces
+
+data_x$BBDXY <- na_if(data_x$BBDXY, 0)
+
+# 1. EMBIG return and commodity/10-yr rate/dollar
+#data_x %>% select(JPEIDIVR, BCOM, USGG10YR, BBDXY) %>%
+#  cor(use = "pairwise.complete.obs")
+
+data_x_select1 <- data_x %>% select(JPEIDIVR, BCOM, USGG10YR, BBDXY)
+cor1 <- round(cor(data_x_select1, use = "pairwise.complete.obs"), 3)
+
+
+# 2. Total commodity individual commodities 
+data_x_select2 <- data_x %>% select(BCOM, BCOMIN, BCOMAG, BCOMEN, BCOIL)
+cor2 <- round(cor(data_x_select2, use = "pairwise.complete.obs"), 3)
+
+
+###############################################################################
+# eigenvalue plots
+###############################################################################
+
+# utilize conditional eigenvalues
+eigen_viz <-
+  condEigenvals %>%
+  pivot_longer(cols = c('lambda1','lambda2','lambda3') #,'lambda4','lambda5'),
+    names_to = "eigenval",
+    values_to = "value")
+
+# plot eigenvalues
+eigen_viz %>%
+  ggplot() + aes(x = date, y = value) +
+  geom_line(aes(color=eigenval)) +
+  labs(x = '', y = 'Conditional Eigenvalues') + 
+  theme_classic()
+
+# create normalized eigenvalues
+eigen_viz <- 
+  eigen_viz %>%
+  mutate(eigenshare = value/sum(value))
+
+# plot normalized eigenvalues
+library(latex2exp)
+eigen_viz %>%
+  ggplot() + aes(x = date, y = eigenshare) +
+  geom_line(aes(color=eigenval)) +
+  labs(x = '', y = 'Normalized Eigenvalues') + 
+  theme_classic() + 
+  scale_color_discrete(labels = unname(TeX(c("$\\hat{\\lambda}_{1,t}/\\Epsilon_{i}\\hat{\\lambda}_{i,t}$", 
+                                             "$\\hat{\\lambda}_{2,t}/\\Epsilon_{i}\\hat{\\lambda}_{i,t}$",
+                                             "$\\hat{\\lambda}_{3,t}/\\Epsilon_{i}\\hat{\\lambda}_{i,t}$"))))
 

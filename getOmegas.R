@@ -9,7 +9,7 @@ source('getTheta.R') # fetches data and estimates theta
 L <- EigenARCH_loglikelihood(theta)
 loglik <- EigenARCH_loglikelihood_cont(x, theta, n)
 Lambda <- loglik$lambda %>% t()
-colnames(Lambda) <- c('lambda1','lambda2','lambda3')
+colnames(Lambda) <- c('lambda1','lambda2','lambda3','lambda4','lambda5')
 
 # Reparametrization of theta, save in individual matrices
 parameters <- EigenARCH_repar(p, n, theta)
