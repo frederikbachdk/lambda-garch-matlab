@@ -11,7 +11,8 @@ options(scipen=999)
 cat('\014')
 rm(list=ls())
 
-source('getOmegas.R')
+#source('getOmegas.R')
+condCovariances <- readRDS(file = "condVariances.rds")
 source('getWeights.R')
 
 #############################################################################
