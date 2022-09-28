@@ -5,7 +5,7 @@ library(tictoc)
 library(quadprog)
 library(scales)
 library(alabama)
-#library(lubridate) kan måske slettes, tjek i næste kørsel
+library(lubridate)
 
 # turn off scinumbers, clear console and memory
 options(scipen=999) 
@@ -36,17 +36,13 @@ benchmark <- readxl::read_excel('data/07092022_embig_data.xlsx', sheet = 'Return
   select(Date, EMBIG) %>%
   filter(Date >= '2019-01-02') # NB!
 
-# create helper column to indicate month shift
+# indicate first trading day of month
 x_trading <- x_trading %>%
-  mutate(month = month(Date),
-         rebalance = 0)
-
-x_trading$rebalance[1] = 1
-for(m in 2:trading_length){
-  if(x_trading$month[m] != x_trading$month[m-1]){
-    x_trading$rebalance[m] = 1
-  }
-}
+  mutate(rebalance = case_when(
+            month(Date) > month(lag(Date)) ~ 1,
+            month(Date) <= month(lag(Date)) ~ 0,
+            TRUE ~ 0
+           )) 
 
 # initialize tibble
 trading <- matrix(NA,
@@ -80,7 +76,7 @@ trading$NTC[1,6] <- trading$NTC[1,1:5] %*% t(as.matrix(x_trading[1,2:6]/100))
 count <- 0
 # generate portfolio weights and returns
 for(t in 2:trading_length){
-
+  
   if(x_trading$rebalance[t] == 1){
     rebalance_date <- which(data$Date == as.Date(x_trading$Date[t]))
     Omega_int <- condCovariances[[rebalance_date]]
@@ -104,25 +100,25 @@ for(t in 2:trading_length){
     
     # equal weighted  
     w_ew <- trading$EW[t-1,1:5] * (1 + x_trading[t-1,2:6]/100)
-    w_ew <- as.numeric(w_ew / sum(as.vector(w_ew)))
+    w_ew <- as.numeric(w_ew / sum(as.matrix(w_ew)))
     return_ew <- w_ew %*% t(as.matrix(x_trading[t-1,2:6]/100))
     trading$EW[t,] <- c(w_ew, return_ew)
     
     # minimum variance
     w_mvp <- trading$MVP[t-1,1:5] * (1 + x_trading[t-1,2:6]/100)
-    w_mvp <- as.numeric(w_mvp / sum(as.vector(w_mvp)))
+    w_mvp <- as.numeric(w_mvp / sum(as.matrix(w_mvp)))
     return_mvp <- w_mvp %*% t(as.matrix(x_trading[t-1,2:6]/100))
     trading$MVP[t,] <- c(w_mvp, return_mvp)
     
     # efficient tangent
     w_tan <- trading$TAN[t-1,1:5] * (1 + x_trading[t-1,2:6]/100)
-    w_tan <- as.numeric(w_tan / sum(as.vector(w_tan)))
+    w_tan <- as.numeric(w_tan / sum(as.matrix(w_tan)))
     return_tan <- w_tan %*% t(as.matrix(x_trading[t-1,2:6]/100))
     trading$TAN[t,] <- c(w_tan, return_tan)
     
     # efficient tangent net TC
     w_ntc <- trading$NTC[t-1,1:5] * (1 + x_trading[t-1,2:6]/100)
-    w_ntc <- as.numeric(w_ntc / sum(as.vector(w_ntc)))           # w_{t+1}
+    w_ntc <- as.numeric(w_ntc / sum(as.matrix(w_ntc)))           # w_{t+1}
     
     # er det den her?
     return_ntc <- w_ntc %*% t(as.matrix(x_trading[t-1,2:6]/100)) # w_{t+1} * r_t
