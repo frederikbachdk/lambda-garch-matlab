@@ -3,7 +3,6 @@ library(MASS)
 library(tidyverse)
 library(tictoc)
 library(pracma)
-li
 
 # turn off scinumbers, clear console and memory
 options(scipen=999)
