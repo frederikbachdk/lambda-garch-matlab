@@ -70,27 +70,28 @@ EigenARCH_repar <- function(p, n, param){
   
   # Eigenvectors
   phi <- param[count:(count + p*(p-1)/2-1)]
+  phi <- exp(phi)/(1+exp(phi)) * pi/2 
   count <- count+p*(p-1)/2
   V   <- rotation(phi,p) # Rotation matrix
 
   # Constant
-  omega <- param[count:(count+p-1)]
+  omega <- exp(param[count:(count+p-1)])
   count <- count+p
   
   # Reduced rank matrices
-  a <- matrix(param[count:(count+p*n-1)], ncol=n, byrow = TRUE)
+  a <- matrix(param[count:(count+p*n-1)]^2, ncol=n, byrow = TRUE)
   count <- count + p*n
   
   if(p == n){
     g = diag(1,n)
   } else{
     g <- matrix(0,p,n)
-    g[1:(p-n),] <- matrix(param[count:(count+(p-n)*n-1)], ncol=n, byrow = TRUE) # FIRST ROW FREE
+    g[1:(p-n),] <- matrix(param[count:(count+(p-n)*n-1)]^2, ncol=n, byrow = TRUE) # FIRST ROW FREE
     g[(p-n+1):end,] <- diag(n,n)
     count <- count+(p-n)*n     
   }
   
-  b <- matrix(param[count:(count+p*n-1)],ncol=n,nrow=p, byrow = TRUE);
+  b <- matrix(param[count:(count+p*n-1)]^2,ncol=n,nrow=p, byrow = TRUE);
   count <- count+p*n;
   
   alpha <- g %*% t(a); 
