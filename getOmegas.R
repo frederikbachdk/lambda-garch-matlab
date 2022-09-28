@@ -1,9 +1,47 @@
+#############################################################################
+### load libraries and settings ###
+#############################################################################
+library(tidyverse)
+library(tictoc)
+
 # turn off scinumbers, clear console and memory
 options(scipen=999) 
 cat('\014')
+rm(list=ls())
+set.seed(2022)
 
 # import functions
-source('getTheta.R') # fetches data and estimates theta
+source('utils/estimationFunctions.R')
+source('utils/matrixFunctions.R')
+
+#############################################################################
+### define sample period ###
+#############################################################################
+estimation_start <- as.Date('2010-01-01')
+estimation_end <- as.Date('2018-12-31')
+
+#############################################################################
+### load data ###
+#############################################################################
+data <- readxl::read_excel('data/12072022_embig_data.xlsx', sheet = 'Returns') %>%
+  mutate(Date = as.Date(Date)) %>%
+  select(Date, Africa, Asia, Europe, 'Middle East', 'Latin America') %>%
+  filter(Date >= estimation_start)
+
+x <- data %>% filter(Date <= estimation_end) %>%
+  select(-Date) %>% as.matrix() %>% t()
+
+x_full <- data %>% select(-Date) %>% as.matrix() %>% t()
+N <- ncol(x_full)
+p <- n <- nrow(x)
+row_end <- which(data$Date == as.Date(estimation_end))
+
+#############################################################################
+### fetch parameters ###
+#############################################################################
+
+# from matlab optimizer
+theta <- readxl::read_excel('thetahat.xlsx')  %>% as.matrix()
 
 #Lambda <- readxl::read_excel("data/condEigenvalues.xlsx") %>% as.matrix()
 L <- EigenARCH_loglikelihood(theta)
@@ -53,3 +91,5 @@ names(condCovariances) <- data$Date
 
 # calculate sample covariance matrix
 sampleCovariance <- cov(t(x))
+
+rm(list=setdiff(ls(), c('condCovariances','sampleCovariance', 'data')))
