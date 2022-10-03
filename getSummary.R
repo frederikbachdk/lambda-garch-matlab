@@ -1,88 +1,168 @@
 # IMPORT PACKAGES
 library(tidyverse)
-library(janitor)
 library(gridExtra)
-library(lemon)
 library(ggplotify)
-library(forecast)
+library(lemon)
 library(dplyr)
-source('plots/plots_functions.R')
+source('utils/plotsFunctions.R')
 
 ### IMPORT DATA ###
-regions <- c('Date','IG','HY','Europe','Middle East','Africa','Asia','CEEMEA','Latin America')
-data <- readxl::read_excel('data/07092022_embig_data.xlsx', sheet = 'Returns')
-data <- data %>% mutate(Date = as.Date(data$Date))
+data <- readxl::read_excel('data/07092022_embig_data.xlsx', sheet = 'Returns') %>% 
+  filter(Date >= '2010-01-01') %>%
+  mutate(Date = as.Date(Date)) %>%
+  rename('Investment Grade' = IG,
+         'High Yield' = HY)
 
-colnames(data) <- regions
+weights <- readxl::read_excel('data/07092022_embig_data.xlsx', sheet = 'Weights') %>% 
+  filter(Date >= '2010-01-01') %>%
+  mutate(Date = as.Date(Date))
 
-### PIVOT DATA FOR GGPLOT2 ###
+### PIVOT DATA  ###
 data_viz <- data %>% 
-  pivot_longer(cols = IG:'Middle East', 
-               names_to = 'region',
-               values_to = 'log_ret')
+  pivot_longer(cols = Africa:'High Yield', 
+               names_to = 'Group',
+               values_to = 'Return')
 
-data_viz_region <- data_viz %>% filter(region %in% 
-                                         c('Africa', 
+data_viz_region <- data_viz %>% filter(Group %in% 
+                                         c('EMBIG',
+                                           'Africa', 
                                            'Asia',
                                            'Europe',
                                            'Latin America',
-                                           'Middle East'))
+                                           'Middle East')) %>%
+  rename('Region' = Group)
 
-data_viz_rating <- data_viz %>% filter(region %in% 
-                                         c('IG',
-                                           'HY'))
+data_viz_rating <- data_viz %>% filter(Group %in% 
+                                         c('Investment Grade',
+                                           'High Yield'))
 
 ###############################################################################
 # visualize daily total return
 ###############################################################################
 
 # Figure 1) Daily return line plots for regions
-data_viz_region %>% filter(Date >= '2008-01-01') %>%
+data_viz_region$Region <- factor(data_viz_region$Region, 
+                                levels=c('EMBIG', 
+                                         'Africa',
+                                         'Asia',
+                                         'Europe',
+                                         'Latin America',
+                                         'Middle East'))
+data_viz_region %>%
   ggplot() + 
-  geom_line(mapping = aes(x = Date, y = log_ret), color = 'steelblue') +
-  ylim(-8, 8) + 
-  facet_rep_wrap(~ region, nrow = 4, repeat.tick.labels = TRUE) +
+  geom_line(mapping = aes(x = Date, y = Return), color = 'steelblue') +
+  ylim(-2.5, 2.5) + 
+  facet_rep_wrap(~ Region, nrow = 4, repeat.tick.labels = TRUE) +
   theme(legend.position="none") +
   labs(x = '', y = 'Total Return (%)') + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) +
-  theme(strip.background = element_blank()) + 
+  theme_classic() +
+  theme(
+    axis.text = element_text(size = 10), 
+    strip.background = element_blank(),
+    strip.text = element_text(size=10)) + 
   scale_x_date(breaks = scales::breaks_pretty(10))
 
+ggsave('regional_returns.png', dpi = 'retina',
+       path = 'plots/')
+
 # Figure 2) Daily return line plots for ratings
-data_viz_rating %>% filter(Date >= '2008-01-01') %>%
+data_viz_rating %>%
   ggplot() + 
-  geom_line(mapping = aes(x = Date, y = log_ret), color = 'steelblue') +
-  ylim(-8, 8) + 
-  facet_rep_wrap(~ region, nrow = 4, repeat.tick.labels = TRUE) +
+  geom_line(mapping = aes(x = Date, y = Return), color = 'steelblue') +
+  ylim(-2.5, 2.5) + 
+  facet_rep_wrap(~ Group, nrow = 4, repeat.tick.labels = TRUE) +
   theme(legend.position="none") +
   labs(x = '', y = 'Total Return (%)') + 
   theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) +
-  theme(strip.background = element_blank()) + 
+  theme(
+    axis.text = element_text(size = 10), 
+    strip.background = element_blank(),
+    strip.text = element_text(size=10)) + 
   scale_x_date(breaks = scales::breaks_pretty(10))
+
+ggsave('rating_returns.png', dpi = 'retina',
+       path = 'plots/')
+
+###############################################################################
+# visualize weights
+###############################################################################
+weight_viz <- weights %>% 
+  pivot_longer(cols = Europe:'Latin America', 
+               names_to = 'Region',
+               values_to = 'Weight')
+
+
+# Figure 1) Daily return line plots for regions
+weight_viz %>%
+  ggplot() + aes(x = Date, y = Weight, color = Region) + geom_line() +
+  scale_color_manual(values = c("#4682b4",
+                                "#1b98e0",
+                                "#3630ff",
+                                "#085a05",
+                                "#a00909")) +
+  theme(
+    axis.text = element_text(size = 10), 
+    strip.background = element_blank(),
+    strip.text = element_text(size=10)) + 
+  scale_x_date(breaks = scales::breaks_pretty(10)) +
+  ylim(0,50) +
+  theme_classic()
+
+ggsave('regional_weights.png', dpi = 'retina',
+       path = 'plots/')
 
 ###############################################################################
 # autocorrelation function plots
 ###############################################################################
 
-# Figures 3-5) ACF plots
+# Figure 6) ACF plots for regions
 acf_list <- list()
 acf_list_sq <- list()
 acf_list_abs <- list()
-ctrys <- c('Africa', 'Asia', 'Europe', 'Latin America', 'Middle East')
-for(i in 1:5){
+ctrys <- c('EMBIG', 'Africa', 'Asia', 'Europe', 'Latin America', 'Middle East')
+
+for(i in 1:6){
   acf_list[[i]] <- acf_plot(x = data_viz_region, region = ctrys[i], lag.max = 20)
   acf_list_sq[[i]] <- acf_plot(x = data_viz_region %>%
-                               mutate(log_ret = log_ret^2), 
+                               mutate(Return = Return^2), 
                                region = ctrys[i], lag.max = 20)
   acf_list_abs[[i]] <- acf_plot(x = data_viz_region %>%
-                                 mutate(log_ret = abs(log_ret)), 
+                                 mutate(Return = abs(Return)), 
                                region = ctrys[i], lag.max = 20)
 }
 do.call("grid.arrange", c(acf_list, ncol=2))
+ggsave('acf_returns', dpi = 'retina',
+       path = 'plots/')
+
 do.call("grid.arrange", c(acf_list_sq, ncol=2))
+ggsave('acf_abs_returns', dpi = 'retina',
+       path = 'plots/') 
+
 do.call("grid.arrange", c(acf_list_abs, ncol=2))
+
+# Figure 3) ACF plots for ratings
+acf_list_ratings <- list()
+acf_list_sq_ratings <- list()
+acf_list_abs_ratings <- list()
+ctrys <- c('HY','IG')
+
+for(i in 1:2){
+  acf_list_ratings[[i]] <- acf_plot(x = data_viz_rating %>%
+                                      rename(Region = 'Group'), region = ctrys[i], lag.max = 20)
+  acf_list_sq_ratings[[i]] <- acf_plot(x = data_viz_rating %>%
+                                         rename(Region = 'Group') %>%
+                                 mutate(Return = Return^2), 
+                               region = ctrys[i], lag.max = 20)
+  acf_list_abs_ratings[[i]] <- acf_plot(x = data_viz_rating %>%
+                                          rename(Region = 'Group') %>%
+                                  mutate(Return = abs(Return)), 
+                                region = ctrys[i], lag.max = 20)
+}
+
+do.call("grid.arrange", c(acf_list_ratings, ncol=2))
+do.call("grid.arrange", c(acf_list_sq_ratings, ncol=2))
+do.call("grid.arrange", c(acf_list_abs_ratings, ncol=2))
+
 
 ###############################################################################
 # density plots
@@ -125,8 +205,6 @@ data %>% select(-Date, -IG, -HY) %>%
 # covariance matrix
 covmat <- data %>% select(-period) %>% 
   cov(use = "complete.obs")
-
-
 
 
 # eigenvalues of the unconditional covariance matrix

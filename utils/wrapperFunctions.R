@@ -81,5 +81,4 @@ calculate_weights <- function(data, Omegas){
   
   
   
-  
 }

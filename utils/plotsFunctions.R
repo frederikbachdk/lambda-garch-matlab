@@ -3,9 +3,9 @@ acf_plot <- function(x, region, lag.max = 30){
   # function to plot ACFs.
   # input: TBC
   # output: TBC
-  x <- x %>% filter(region == region) %>%
-    select(log_ret)
-  
+  x <- x %>% filter(Region == region) %>%
+    select(Return)
+
   # filter data based on user choice
   acf <- x %>% na.omit() %>% 
     acf(lag.max = lag.max, plot = FALSE) # create ACF object
@@ -23,7 +23,8 @@ acf_plot <- function(x, region, lag.max = 30){
       acf_upperbound = 2/sqrt(x_acf_N))
   
   # plot 
-  acf_tib %>% ggplot() + aes(x = lag, y = ACF) +
+  acf_tib %>% filter(lag > 0) %>% 
+    ggplot() + aes(x = lag, y = ACF) +
     geom_hline(aes(yintercept = 0)) +
     geom_segment(mapping = aes(y = (ACF + 0.0025), xend = lag, yend = 0),
                  size = 3.5,
@@ -43,7 +44,6 @@ acf_plot <- function(x, region, lag.max = 30){
     scale_x_continuous(breaks = round(seq(0, lag.max, by = 2),1)) + 
     theme_classic() +
     ggtitle(paste0(region)) +
-    ylab('Autocorrelation Function') +
     xlab('Lag number') +
     theme(text = element_text(color="black"),
           axis.text=element_text(color="black"),
