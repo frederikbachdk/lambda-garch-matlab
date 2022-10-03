@@ -2,9 +2,14 @@
 library(tidyverse)
 library(gridExtra)
 library(ggplotify)
+library(latex2exp)
 library(lemon)
 library(dplyr)
+library(jcolors)
+jcolors('default')
 source('utils/plotsFunctions.R')
+source('getOmegas.R')
+
 
 ### IMPORT DATA ###
 data <- readxl::read_excel('data/07092022_embig_data.xlsx', sheet = 'Returns') %>% 
@@ -92,7 +97,7 @@ weight_viz <- weights %>%
                values_to = 'Weight')
 
 
-# Figure 1) Daily return line plots for regions
+# Figure 3) Weight line plots for regions
 weight_viz %>%
   ggplot() + aes(x = Date, y = Weight, color = Region) + geom_line() +
   scale_color_manual(values = c("#4682b4",
@@ -115,7 +120,7 @@ ggsave('regional_weights.png', dpi = 'retina',
 # autocorrelation function plots
 ###############################################################################
 
-# Figure 6) ACF plots for regions
+# Figure 4) ACF plots for regions
 acf_list <- list()
 acf_list_sq <- list()
 acf_list_abs <- list()
@@ -135,43 +140,17 @@ ggsave('acf_returns', dpi = 'retina',
        path = 'plots/')
 
 do.call("grid.arrange", c(acf_list_sq, ncol=2))
-ggsave('acf_abs_returns', dpi = 'retina',
+ggsave('acf_sq_returns', dpi = 'retina',
        path = 'plots/') 
 
 do.call("grid.arrange", c(acf_list_abs, ncol=2))
-
-# Figure 3) ACF plots for ratings
-acf_list_ratings <- list()
-acf_list_sq_ratings <- list()
-acf_list_abs_ratings <- list()
-ctrys <- c('HY','IG')
-
-for(i in 1:2){
-  acf_list_ratings[[i]] <- acf_plot(x = data_viz_rating %>%
-                                      rename(Region = 'Group'), region = ctrys[i], lag.max = 20)
-  acf_list_sq_ratings[[i]] <- acf_plot(x = data_viz_rating %>%
-                                         rename(Region = 'Group') %>%
-                                 mutate(Return = Return^2), 
-                               region = ctrys[i], lag.max = 20)
-  acf_list_abs_ratings[[i]] <- acf_plot(x = data_viz_rating %>%
-                                          rename(Region = 'Group') %>%
-                                  mutate(Return = abs(Return)), 
-                                region = ctrys[i], lag.max = 20)
-}
-
-do.call("grid.arrange", c(acf_list_ratings, ncol=2))
-do.call("grid.arrange", c(acf_list_sq_ratings, ncol=2))
-do.call("grid.arrange", c(acf_list_abs_ratings, ncol=2))
 
 
 ###############################################################################
 # density plots
 ###############################################################################
 
-# Figure 4) Density plots
-x <- data %>% select(Europe) %>% filter(between(Europe, -2, 2))
-ctry <- colnames(x)
-
+# Figure 5) Density plots
 x %>% ggplot() + aes(x = Europe) +
   geom_density() +
   ggtitle(paste0(ctry)) +
@@ -184,34 +163,33 @@ x %>% ggplot() + aes(x = Europe) +
         axis.text=element_text(color="black"),
         plot.title = element_text(hjust = 0.5))
 
+
 ###############################################################################
 # summary statistics
 ###############################################################################
 
 # annualized means and std. devs
-data_viz %>%
-  group_by(region) %>% 
-  summarise_at(vars(log_ret),
+data_viz_region %>%
+  group_by(Region) %>% 
+  summarise_at(vars(Return),
                list(Mean = ~250*mean(.), 
                     Volatility = ~sqrt(250)*sd(.), 
                     Sharpe = ~sqrt(250)*mean(.)/sd(.))) %>%
   arrange(desc(Sharpe))
 
 # correlation matrix
-data %>% select(-Date, -IG, -HY) %>%  
+data %>% select(-Date, -'Investment Grade', -'High Yield', -EMBIG) %>%  
   cor(use = "complete.obs")
 
-
 # covariance matrix
-covmat <- data %>% select(-period) %>% 
-  cov(use = "complete.obs")
-
+covmat <- data %>% select(-Date, -'Investment Grade', -'High Yield', -EMBIG) %>%  
+  cov(use = "complete.obs") %>%
+  round(digits=3)
 
 # eigenvalues of the unconditional covariance matrix
 eig <- eigen(covmat)
 100*eig$values/sum(eig$values)
 eig$vectors
-
 
 ###############################################################################
 # correlation plots
@@ -241,33 +219,43 @@ cor2 <- round(cor(data_x_select2, use = "pairwise.complete.obs"), 3)
 # eigenvalue plots
 ###############################################################################
 
-# utilize conditional eigenvalues
-eigen_viz <-
-  condEigenvals %>%
-  pivot_longer(cols = c('lambda1','lambda2','lambda3') #,'lambda4','lambda5'),
-    names_to = "eigenval",
-    values_to = "value")
-
-# plot eigenvalues
-eigen_viz %>%
-  ggplot() + aes(x = date, y = value) +
-  geom_line(aes(color=eigenval)) +
-  labs(x = '', y = 'Conditional Eigenvalues') + 
-  theme_classic()
-
 # create normalized eigenvalues
-eigen_viz <- 
-  eigen_viz %>%
-  mutate(eigenshare = value/sum(value))
+condEigenvals_norm <- condEigenvals %>% 
+  mutate(row_sum = rowSums(select(., 2:6))) %>% 
+  mutate_at(2:6, ~ ./row_sum) %>% 
+  select(-row_sum) %>%
+  pivot_longer(cols = lambda1:lambda5,
+               names_to = 'Eigenvalue',
+               values_to = 'Value')
+
+condEigenvals_long <- condEigenvals %>% 
+  pivot_longer(cols = lambda1:lambda5,
+               names_to = 'Eigenvalue',
+               values_to = 'Value')
 
 # plot normalized eigenvalues
-library(latex2exp)
-eigen_viz %>%
-  ggplot() + aes(x = date, y = eigenshare) +
-  geom_line(aes(color=eigenval)) +
-  labs(x = '', y = 'Normalized Eigenvalues') + 
+eigplot1 <- condEigenvals_long %>%
+  ggplot() + aes(x = Date, y = Value, color = Eigenvalue) + geom_line() +
+  labs(x = '', y = 'Eigenvalue') + 
   theme_classic() + 
-  scale_color_discrete(labels = unname(TeX(c("$\\hat{\\lambda}_{1,t}/\\Epsilon_{i}\\hat{\\lambda}_{i,t}$", 
-                                             "$\\hat{\\lambda}_{2,t}/\\Epsilon_{i}\\hat{\\lambda}_{i,t}$",
-                                             "$\\hat{\\lambda}_{3,t}/\\Epsilon_{i}\\hat{\\lambda}_{i,t}$"))))
+  theme(
+    axis.text = element_text(size = 10), 
+    strip.background = element_blank(),
+    strip.text = element_text(size=10)) + 
+  scale_x_date(breaks = scales::breaks_pretty(10)) +
+  scale_color_jcolors(palette = "pal7")
+  
+eigplot2 <- condEigenvals_norm %>%
+  ggplot() + aes(x = Date, y = Value, color = Eigenvalue) + geom_line() +
+  labs(x = '', y = 'Eigenvalue (%)') + 
+  theme_classic() + 
+  theme(
+    axis.text = element_text(size = 10), 
+    strip.background = element_blank(),
+    strip.text = element_text(size=10)) + 
+  scale_x_date(breaks = scales::breaks_pretty(10)) + 
+  scale_color_jcolors(palette = "pal7") 
 
+grid.arrange(eigplot1, eigplot2)
+ggsave('eigenvals', dpi = 'retina',
+       path = 'plots/')

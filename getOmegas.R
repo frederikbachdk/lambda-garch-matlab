@@ -92,4 +92,4 @@ names(condCovariances) <- data$Date
 # calculate sample covariance matrix
 sampleCovariance <- cov(t(x))
 
-rm(list=setdiff(ls(), c('condCovariances','sampleCovariance', 'data')))
+rm(list=setdiff(ls(), c('condEigenvals','condCovariances','sampleCovariance', 'data')))
