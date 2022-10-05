@@ -80,19 +80,25 @@ for(t in 2:trading_length){
   if(x_trading$rebalance[t] == 1){
     rebalance_date <- which(data$Date == as.Date(x_trading$Date[t]))
     Omega_int <- condCovariances[[rebalance_date]]
-    mu <- rep(as.matrix(benchmark[t,2]/100), 5)
+    mu <- rep(as.matrix(benchmark[t,2]/100), 5) # required return is the benchmark return
     
     # rebalance portfolio weights
-    trading$EW[t,1:5]  <- equalWeights(n = 5)
-    trading$MVP[t,1:5] <- minimumVarWeights(Omega_int)
-    trading$TAN[t,1:5] <- tangentWeights(Omega_int, mu = mu, gamma = 4)
-    trading$NTC[t,1:5] <- tangentNTCWeights(Omega_int, mu = mu, gamma = 4, beta = 50)
+    w_ew <- equalWeights(n = 5)
+    w_mvp <- minimumVarWeights(Omega_int)
+    w_tan <- tangentWeights(Omega_int, mu = mu, gamma = 4)
+    w_ntc <- tangentNTCWeights(Omega_int, mu = mu, gamma = 4, beta = 50)
+    
+    # store weights in tibble
+    trading$EW[t,1:5]  <- w_ew
+    trading$MVP[t,1:5] <- w_mvp
+    trading$TAN[t,1:5] <- w_tan
+    trading$NTC[t,1:5] <- w_ntc
     
     # portfolio returns
-    trading$EW[t,6]  <- trading$EW[t,1:5] %*% t(as.matrix(x_trading[t,2:6]/100))
-    trading$MVP[t,6] <- trading$MVP[t,1:5] %*% t(as.matrix(x_trading[t,2:6]/100))
-    trading$TAN[t,6] <- trading$TAN[t,1:5] %*% t(as.matrix(x_trading[t,2:6]/100))
-    trading$NTC[t,6] <- trading$NTC[t,1:5] %*% t(as.matrix(x_trading[t,2:6]/100))
+    trading$EW[t,6]  <- evaluate_performance(w = w_ew, w_previous = trading$EW[t-1,1:5], next_return = x_trading[t,2:6]/100)
+    trading$MVP[t,6] <- evaluate_performance(w = w_mvp, w_previous = trading$MVP[t-1,1:5], next_return = x_trading[t,2:6]/100)
+    trading$TAN[t,6] <- evaluate_performance(w = w_tan, w_previous = trading$TAN[t-1,1:5], next_return = x_trading[t,2:6]/100)
+    trading$NTC[t,6] <- evaluate_performance(w = w_ntc, w_previous = trading$NTC[t-1,1:5], next_return = x_trading[t,2:6]/100)
     
     count <- count + 1
     
@@ -118,24 +124,10 @@ for(t in 2:trading_length){
     
     # efficient tangent net TC
     w_ntc <- trading$NTC[t-1,1:5] * (1 + x_trading[t-1,2:6]/100)
-    w_ntc <- as.numeric(w_ntc / sum(as.matrix(w_ntc)))           # w_{t+1}
-    
-    # er det den her?
-    return_ntc <- w_ntc %*% t(as.matrix(x_trading[t-1,2:6]/100)) # w_{t+1} * r_t
-    # eller den her?
-    return_ntc <- evaluate_performance(w = w_ntc, 
-                                       w_previous = trading$NTC[t-1,1:5],
-                                       next_return = x_trading[t,2:6]/100)
-
+    w_ntc <- as.numeric(w_ntc / sum(as.matrix(w_ntc)))
+    return_ntc <- w_ntc %*% t(as.matrix(x_trading[t-1,2:6]/100))
     trading$NTC[t,] <- c(w_ntc, return_ntc)
     
-    # funktionen findes i getWeights
-    # evaluate_performance <- function(w, w_previous, next_return, beta = 50){
-    #   raw_return <- as.matrix(next_return) %*% w          # w_{t+1} * r_{t+1}
-    #   turnover <- t(w - w_previous) %*% (w - w_previous)  # ||w_{t+1} - w_{t+}||
-    #   net_return <- raw_return - beta / 10000 * turnover  # r_{t+1} - b*turnover
-    #   return(net_return)
-    # }
   }
 }
 

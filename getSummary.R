@@ -192,27 +192,61 @@ eig <- eigen(covmat)
 eig$vectors
 
 ###############################################################################
-# correlation plots
+# correlation table & plot
 ###############################################################################
-# import data
-data_x <- readxl::read_excel('data/covariates.xlsx', sheet = 'Indeces')
-data_x <- data_x %>% mutate(Date = as.Date(data_x$Date))
+# import indeces
+data_x <- readxl::read_excel('data/07092022_covariates.xlsx', sheet = 'Indices') %>%
+  mutate(Date = as.Date(Date))
 indeces <- c('Date','BCOM','BCOMTR','BCOMIN','BCOMAG','BCOMEN','BCOIL','WCOIL','USGG10YR','BBDXY','JPEIDIVR')
 colnames(data_x) <- indeces
 
-data_x$BBDXY <- na_if(data_x$BBDXY, 0)
+# covariates
+exos <- data_x %>%
+  select(Date, BCOIL, USGG10YR, BBDXY) %>%
+  mutate(OIL = log(BCOIL) - log(lag(BCOIL)),
+         '10YR' = log(USGG10YR) - log(lag(USGG10YR)),
+         USD = log(BBDXY) - log(lag(BBDXY))) %>%
+  filter(Date > '2010-01-01') %>%
+  select(Date, OIL, '10YR', USD) %>%
+  pivot_longer(cols = !Date, names_to = "index", values_to = "values")
 
-# 1. EMBIG return and commodity/10-yr rate/dollar
-#data_x %>% select(JPEIDIVR, BCOM, USGG10YR, BBDXY) %>%
+# regions
+returns <- data %>%
+  filter(Date > '2010-01-01',
+         Date <= '2022-09-06') %>%
+  pivot_longer(cols = !Date, names_to = "region", values_to = "values") %>%
+  mutate(values = values / 100)
+
+# illustrate return time series
+ggplot() + 
+  geom_line(returns, mapping = aes(x = Date, y = values)) + 
+  facet_rep_wrap(~ region, nrow = 4, repeat.tick.labels = TRUE) +
+  theme(legend.position = "bottom") +
+  labs(x = '', y = 'Log Returns (USD)', color = 'Covariate') + 
+  theme_classic() +
+  theme(
+    axis.text = element_text(size = 10), 
+    strip.background = element_blank(),
+    strip.text = element_text(size=10)) + 
+  scale_x_date(breaks = scales::breaks_pretty(10)) +
+  # scale_color_manual(labels=c('Oil','US 10 yr'),#,'USD'),
+  #                      values=c('lightskyblue','olivedrab','lightpink')) +
+  scale_color_jcolors(palette = "pal7") +
+  geom_line(as.data.frame(exos), mapping = aes(x = Date, y = values, color = index))
+
+ggsave('return_variance.png', dpi = 'retina', path = 'plots/')
+
+# # 1. EMBIG return and commodity/10-yr rate/dollar
+# data_x %>% select(JPEIDIVR, BCOM, USGG10YR, BBDXY) %>%
 #  cor(use = "pairwise.complete.obs")
+# 
+# data_x_select1 <- data_x %>% select(JPEIDIVR, BCOM, USGG10YR, BBDXY)
+# cor1 <- round(cor(data_x_select1, use = "pairwise.complete.obs"), 3)
+# 
+# # 2. Total commodity individual commodities 
+# data_x_select2 <- data_x %>% select(BCOM, BCOMIN, BCOMAG, BCOMEN, BCOIL)
+# cor2 <- round(cor(data_x_select2, use = "pairwise.complete.obs"), 3)
 
-data_x_select1 <- data_x %>% select(JPEIDIVR, BCOM, USGG10YR, BBDXY)
-cor1 <- round(cor(data_x_select1, use = "pairwise.complete.obs"), 3)
-
-
-# 2. Total commodity individual commodities 
-data_x_select2 <- data_x %>% select(BCOM, BCOMIN, BCOMAG, BCOMEN, BCOIL)
-cor2 <- round(cor(data_x_select2, use = "pairwise.complete.obs"), 3)
 
 
 ###############################################################################
