@@ -17,9 +17,9 @@ minimumVarWeights <- function(Omega) {
 tangentWeights <- function(Omega, mu, gamma = 4){
   iota <- rep(1, ncol(Omega))
   Omega_inv <- solve(Omega)
-  # w_init <- (Omega_inv %*% iota) / sum(Omega_inv %*% iota)
+  w_init <- (Omega_inv %*% iota) / sum(Omega_inv %*% iota)    # MVP
   
-  w_init <- rep(1 / ncol(Omega), ncol(Omega))
+  #w_init <- rep(1 / ncol(Omega), ncol(Omega))                # Equal weights
   
   w_tan <- w_init + 1 / gamma * (Omega_inv - w_init %*% t(iota) %*% Omega_inv) %*% mu
   
@@ -28,11 +28,11 @@ tangentWeights <- function(Omega, mu, gamma = 4){
 
 
 tangentNTCWeights <- function(Omega, mu, gamma = 4, beta = 50) {
-  # iota <- rep(1, ncol(Omega))
-  # Omega_inv <- solve(Omega)
-  # w_mvp <- (Omega_inv %*% iota) / sum(Omega_inv %*% iota)
+  iota <- rep(1, ncol(Omega))
+  Omega_inv <- solve(Omega)
+  w_init <- (Omega_inv %*% iota) / sum(Omega_inv %*% iota)    # MVP
   
-  w_init <- rep(1 / ncol(Omega), ncol(Omega))
+  #w_init <- rep(1 / ncol(Omega), ncol(Omega))                # Equal weights
   
   objective <- function(w) {
     -t(w) %*% mu + gamma / 2 * t(w) %*% Omega %*% w +
@@ -53,8 +53,8 @@ tangentNTCWeights <- function(Omega, mu, gamma = 4, beta = 50) {
 
 
 evaluate_performance <- function(w, w_previous, next_return, beta = 50){
-  raw_return <- as.matrix(next_return) %*% w
-  turnover <- t(w - w_previous) %*% (w - w_previous)
-  net_return <- raw_return - beta / 10000 * turnover
+  raw_return <- as.matrix(next_return) %*% w          # w_{t+1} * r_{t+1}
+  turnover <- t(w - w_previous) %*% (w - w_previous)  # ||w_{t+1} - w_{t+}||
+  net_return <- raw_return - beta / 10000 * turnover  # r_{t+1} - b*turnover
   return(net_return)
 }
