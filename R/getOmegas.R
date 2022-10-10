@@ -11,8 +11,8 @@ rm(list=ls())
 set.seed(2022)
 
 # import functions
-source('utils/estimationFunctions.R')
-source('utils/matrixFunctions.R')
+source('R/utils/estimationFunctions.R')
+source('R/utils/matrixFunctions.R')
 
 #############################################################################
 ### define sample period ###
@@ -23,7 +23,7 @@ estimation_end <- as.Date('2018-12-31')
 #############################################################################
 ### load data ###
 #############################################################################
-data <- readxl::read_excel('data/12072022_embig_data.xlsx', sheet = 'Returns') %>%
+data <- readxl::read_excel('data/07092022_embig_data.xlsx', sheet = 'Returns') %>%
   mutate(Date = as.Date(Date)) %>%
   select(Date, Africa, Asia, Europe, 'Middle East', 'Latin America') %>%
   filter(Date >= estimation_start)
@@ -41,7 +41,7 @@ row_end <- which(data$Date == as.Date(estimation_end))
 #############################################################################
 
 # from matlab optimizer
-theta <- readxl::read_excel('thetahat.xlsx')  %>% as.matrix()
+theta <- readxl::read_excel('data/thetahat.xlsx')  %>% as.matrix()
 
 #Lambda <- readxl::read_excel("data/condEigenvalues.xlsx") %>% as.matrix()
 L <- EigenARCH_loglikelihood(theta)
