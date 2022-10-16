@@ -126,6 +126,9 @@ acf_list_sq <- list()
 acf_list_abs <- list()
 ctrys <- c('EMBIG', 'Africa', 'Asia', 'Europe', 'Latin America', 'Middle East')
 
+data_viz_region <- data_viz_region %>% 
+  filter(Date <= as.Date('2018-12-31'))
+
 for(i in 1:6){
   acf_list[[i]] <- acf_plot(x = data_viz_region, region = ctrys[i], lag.max = 20)
   acf_list_sq[[i]] <- acf_plot(x = data_viz_region %>%
@@ -165,7 +168,7 @@ dens_embig <- data %>% select(EMBIG) %>%
                             sd = 1),
                 color = 'red') +
   ggtitle('Panel A: EMBIG') + 
-  labs(y = 'Density') + 
+  labs(y = 'Density', x =) + 
   xlim(-5,5) + 
   theme_classic() +
   theme(
@@ -188,7 +191,7 @@ dens_Africa <- data %>% select(Africa) %>%
                             sd = 1),
                 color = 'red') +
   ggtitle('Panel B: Africa') + 
-  labs(y = 'Density') + 
+  labs(y = 'Density', x =) +  
   xlim(-5,5) + 
   theme_classic() +
   theme(
@@ -211,7 +214,7 @@ dens_Asia <- data %>% select(Asia) %>%
                             sd = 1),
                 color = 'red') +
   ggtitle('Panel C: Asia') + 
-  labs(y = 'Density') + 
+  labs(y = 'Density', x =) + 
   xlim(-5,5) + 
   theme_classic() +
   theme(
@@ -234,7 +237,7 @@ dens_Europe <- data %>% select(Europe) %>%
                             sd = 1),
                 color = 'red') +
   ggtitle('Panel D: Europe') + 
-  labs(y = 'Density') + 
+  labs(y = 'Density', x =) + 
   xlim(-5,5) + 
   theme_classic() +
   theme(
@@ -258,7 +261,7 @@ dens_LatAm <- data %>% select('Latin America') %>%
                             sd = 1),
                 color = 'red') +
   ggtitle('Panel E: Latin America') + 
-  labs(y = 'Density') + 
+  labs(y = 'Density', x =) + 
   xlim(-5,5) + 
   theme_classic() +
   theme(
@@ -282,7 +285,7 @@ dens_MidEast <- data %>% select('Middle East') %>%
                             sd = 1),
                 color = 'red') +
   ggtitle('Panel F: Middle East') + 
-  labs(y = 'Density') + 
+  labs(y = 'Density', x =) + 
   xlim(-5,5) + 
   theme_classic() +
   theme(
@@ -294,8 +297,6 @@ dens_MidEast <- data %>% select('Middle East') %>%
 grid.arrange(dens_embig,dens_Africa, dens_Asia, 
              dens_Europe, dens_LatAm, dens_MidEast, 
              nrow = 3)
-
-
 
 ###############################################################################
 # tail distribution
@@ -315,7 +316,7 @@ data %>% select(Europe) %>%
                 color = 'red') +
   ggtitle('Europe') + 
   labs(y = 'Density', x = '') + 
-  xlim(-13,-1) + 
+  xlim(-13,-0.8) + 
   theme_classic() +
   theme(
     axis.text = element_text(size = 14), 
@@ -334,16 +335,14 @@ data_viz_region %>%
   summarise_at(vars(Return),
                list(Mean = ~250*mean(.), 
                     Volatility = ~sqrt(250)*sd(.), 
-                    Skewness = skewness(.),
-                    Kurtosis = kurtosis(.),
                     Sharpe = ~sqrt(250)*mean(.)/sd(.))) %>%
-  arrange(desc(Sharpe))
+  arrange(Region)
 
 data %>% filter(Date <= as.Date('2021-12-31')) %>% 
   select(Africa, Asia, Europe, 'Latin America', 'Middle East') %>%
   describe()
   
-  describe(data %>% select(Africa, Asia, Europe, 'Latin America', 'Middle East'))
+describe(data %>% select(Africa, Asia, Europe, 'Latin America', 'Middle East'))
 
 # correlation matrix
 data %>% select(-Date, -'Investment Grade', -'High Yield', -EMBIG) %>%  
@@ -704,3 +703,14 @@ b22 <- simulations %>%
     plot.title = element_text(hjust = 0.5, size = 14))
 
 grid.arrange(b11, b12, b21, b22, nrow=2)
+
+
+###############################################################################
+# rotated returns
+###############################################################################
+
+theta_hat_standard <- readxl::read_excel('data/theta_hat_standardmodel.xlsx') %>%
+  as.matrix()
+
+theta_hat_extended <- readxl::read_excel('data/theta_hat_garchX.xlsx') %>%
+  as.matrix()
