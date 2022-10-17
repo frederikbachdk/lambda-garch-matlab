@@ -11,13 +11,14 @@ source('R/utils/plotsFunctions.R')
 source('R/getOmegas.R')
 
 ### IMPORT DATA ###
-data <- readxl::read_excel('data/07092022_embig_data.xlsx', sheet = 'Returns') %>% 
+data <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'DATA_CLEAN') %>% 
   filter(Date >= '2010-01-01') %>%
   mutate(Date = as.Date(Date)) %>%
   rename('Investment Grade' = IG,
-         'High Yield' = HY)
+         'High Yield' = HY,
+         'EMBIG' = 'EMBIG Div')
 
-weights <- readxl::read_excel('data/07092022_embig_data.xlsx', sheet = 'Weights') %>% 
+weights <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'WEIGHTS_CLEAN') %>% 
   filter(Date >= '2010-01-01') %>%
   mutate(Date = as.Date(Date))
 
@@ -26,7 +27,8 @@ weights <- readxl::read_excel('data/07092022_embig_data.xlsx', sheet = 'Weights'
 data_viz <- data %>% 
   pivot_longer(cols = Africa:'High Yield', 
                names_to = 'Group',
-               values_to = 'Return')
+               values_to = 'Return') %>%
+  select(Date, Group, Return)
 
 data_viz_region <- data_viz %>% filter(Group %in% 
                                          c('EMBIG',
@@ -92,7 +94,7 @@ ggsave('rating_returns.png', dpi = 'retina',
 # visualize weights
 ###############################################################################
 weight_viz <- weights %>% 
-  pivot_longer(cols = Europe:'Latin America', 
+  pivot_longer(cols = Africa:'Middle East', 
                names_to = 'Region',
                values_to = 'Weight')
 
@@ -111,6 +113,7 @@ weight_viz %>%
     strip.text = element_text(size=10)) + 
   scale_x_date(breaks = scales::breaks_pretty(10)) +
   ylim(0,50) +
+  labs(y = 'Weight (%)', x = '') +
   theme_classic()
 
 ggsave('regional_weights.png', dpi = 'retina',
@@ -163,13 +166,9 @@ dens_embig <- data %>% select(EMBIG) %>%
   stat_function(fun = dnorm, 
                 args = list(mean = mean(data$EMBIG), 
                             sd = sd(data$EMBIG))) +
-  stat_function(fun = dnorm, 
-                args = list(mean = 0, 
-                            sd = 1),
-                color = 'red') +
   ggtitle('Panel A: EMBIG') + 
-  labs(y = 'Density', x =) + 
-  xlim(-5,5) + 
+  labs(y = 'Density', x = '') + 
+  xlim(-2,2) + 
   theme_classic() +
   theme(
     axis.text = element_text(size = 14), 
@@ -186,13 +185,9 @@ dens_Africa <- data %>% select(Africa) %>%
   stat_function(fun = dnorm, 
                 args = list(mean = mean(data$Africa), 
                             sd = sd(data$Africa))) +
-  stat_function(fun = dnorm, 
-                args = list(mean = 0, 
-                            sd = 1),
-                color = 'red') +
   ggtitle('Panel B: Africa') + 
-  labs(y = 'Density', x =) +  
-  xlim(-5,5) + 
+  labs(y = 'Density', x = '') +  
+  xlim(-2,2) +
   theme_classic() +
   theme(
     axis.text = element_text(size = 14), 
@@ -209,13 +204,9 @@ dens_Asia <- data %>% select(Asia) %>%
   stat_function(fun = dnorm, 
                 args = list(mean = mean(data$Asia), 
                             sd = sd(data$Asia))) +
-  stat_function(fun = dnorm, 
-                args = list(mean = 0, 
-                            sd = 1),
-                color = 'red') +
   ggtitle('Panel C: Asia') + 
-  labs(y = 'Density', x =) + 
-  xlim(-5,5) + 
+  labs(y = 'Density', x = '') + 
+  xlim(-2,2) +
   theme_classic() +
   theme(
     axis.text = element_text(size = 14), 
@@ -232,13 +223,9 @@ dens_Europe <- data %>% select(Europe) %>%
   stat_function(fun = dnorm, 
                 args = list(mean = mean(data$Europe), 
                             sd = sd(data$Europe))) +
-  stat_function(fun = dnorm, 
-                args = list(mean = 0, 
-                            sd = 1),
-                color = 'red') +
   ggtitle('Panel D: Europe') + 
-  labs(y = 'Density', x =) + 
-  xlim(-5,5) + 
+  labs(y = 'Density', x = '') + 
+  xlim(-2,2) +
   theme_classic() +
   theme(
     axis.text = element_text(size = 14), 
@@ -256,13 +243,9 @@ dens_LatAm <- data %>% select('Latin America') %>%
   stat_function(fun = dnorm, 
                 args = list(mean = mean(data$'Latin America'), 
                             sd = sd(data$'Latin America'))) +
-  stat_function(fun = dnorm, 
-                args = list(mean = 0, 
-                            sd = 1),
-                color = 'red') +
   ggtitle('Panel E: Latin America') + 
-  labs(y = 'Density', x =) + 
-  xlim(-5,5) + 
+  labs(y = 'Density', x = '') + 
+  xlim(-2,2) +
   theme_classic() +
   theme(
     axis.text = element_text(size = 14), 
@@ -280,13 +263,9 @@ dens_MidEast <- data %>% select('Middle East') %>%
   stat_function(fun = dnorm, 
                 args = list(mean = mean(data$'Middle East'), 
                             sd = sd(data$'Middle East'))) +
-  stat_function(fun = dnorm, 
-                args = list(mean = 0, 
-                            sd = 1),
-                color = 'red') +
   ggtitle('Panel F: Middle East') + 
-  labs(y = 'Density', x =) + 
-  xlim(-5,5) + 
+  labs(y = 'Density', x = '') + 
+  xlim(-2,2) +
   theme_classic() +
   theme(
     axis.text = element_text(size = 14), 
@@ -310,13 +289,10 @@ data %>% select(Europe) %>%
   stat_function(fun = dnorm, 
                 args = list(mean = mean(data$Europe), 
                             sd = sd(data$Europe))) +
-  stat_function(fun = dnorm, 
-                args = list(mean = 0, 
-                            sd = 1),
-                color = 'red') +
   ggtitle('Europe') + 
   labs(y = 'Density', x = '') + 
-  xlim(-13,-0.8) + 
+  xlim(-2,-0.1) + 
+  ylim(0,1) +
   theme_classic() +
   theme(
     axis.text = element_text(size = 14), 
@@ -408,25 +384,46 @@ eigplot1 <- condEigenvals_long %>%
   theme(
     axis.text = element_text(size = 10), 
     strip.background = element_blank(),
-    strip.text = element_text(size=10)) + 
+    strip.text = element_text(size=10),
+    legend.position = 'bottom') + 
   scale_x_date(breaks = scales::breaks_pretty(10)) +
-  scale_color_jcolors(palette = "pal7")
+  scale_color_manual(values = c("#4682b4",
+                                  "#1b98e0",
+                                  "#3630ff",
+                                  "#085a05",
+                                  "#a00909"),
+                     labels = unname(TeX(c("$\\hat{\\lambda}_{1,t}$", 
+                                             "$\\hat{\\lambda}_{2,t}$",
+                                             "$\\hat{\\lambda}_{3,t}$",
+                                             "$\\hat{\\lambda}_{4,t}$",
+                                             "$\\hat{\\lambda}_{5,t}$"))),
+                     name = '') +
+  guides(colour = guide_legend(override.aes = list(size=4)))
   
 eigplot2 <- condEigenvals_norm %>%
   ggplot() + aes(x = Date, y = Value, color = Eigenvalue) + geom_line() +
-  labs(x = '', y = 'Eigenvalue (%)') + 
+  labs(x = '', y = 'Proportion of Variance') + 
   theme_classic() + 
   theme(
     axis.text = element_text(size = 10), 
     strip.background = element_blank(),
-    strip.text = element_text(size=10)) + 
+    strip.text = element_text(size=10),
+    legend.position = 'bottom') + 
   scale_x_date(breaks = scales::breaks_pretty(10)) + 
-  scale_color_jcolors(palette = "pal7") 
+  scale_color_manual(values = c("#4682b4",
+                                  "#1b98e0",
+                                  "#3630ff",
+                                  "#085a05",
+                                  "#a00909"),
+                     labels = unname(TeX(c("$\\hat{\\lambda}_{1,t}/\\sum_i\\hat{\\lambda}_{i,t}$", 
+                                           "$\\hat{\\lambda}_{2,t}/\\sum_i\\hat{\\lambda}_{i,t}$",
+                                           "$\\hat{\\lambda}_{3,t}/\\sum_i\\hat{\\lambda}_{i,t}$",
+                                           "$\\hat{\\lambda}_{4,t}/\\sum_i\\hat{\\lambda}_{i,t}$",
+                                           "$\\hat{\\lambda}_{5,t}/\\sum_i\\hat{\\lambda}_{i,t}$"))),
+                     name = '') +
+  guides(colour = guide_legend(override.aes = list(size=4)))
 
 grid.arrange(eigplot1, eigplot2)
-ggsave('eigenvals', dpi = 'retina',
-       path = 'plots/')
-
 
 ###############################################################################
 # simulation plots - realization

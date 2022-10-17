@@ -23,7 +23,8 @@ estimation_end <- as.Date('2018-12-31')
 #############################################################################
 ### load data ###
 #############################################################################
-data <- readxl::read_excel('data/07092022_embig_data.xlsx', sheet = 'Returns') %>%
+data <- readxl::read_excel('data/13102022_data.xlsx', 
+                           sheet = 'DATA_CLEAN') %>%
   mutate(Date = as.Date(Date)) %>%
   select(Date, Africa, Asia, Europe, 'Latin America', 'Middle East') %>%
   filter(Date >= estimation_start)
@@ -41,7 +42,8 @@ row_end <- which(data$Date == as.Date(estimation_end))
 #############################################################################
 
 # from matlab optimizer
-theta <- readxl::read_excel('data/theta_hat_standardmodel.xlsx') %>%
+theta <- readxl::read_excel('MATLAB/estimates/theta1.xlsx',
+                            col_names = FALSE) %>%
   as.matrix()
 
 #Lambda <- readxl::read_excel("data/condEigenvalues.xlsx") %>% as.matrix()
