@@ -337,14 +337,19 @@ eig$vectors
 ###############################################################################
 # covariate time series plots
 ###############################################################################
+
 covariates <- data %>% select(Date, 
-                'Commodity' = bbg_commodity_index,
-                'WTI Crude Oil' = wti_crude_oil,
-                '10-yr Treasury' = us_10_yr_yield,
-                'Dollar Strength' = dollar_strength_index) %>%
-  pivot_longer(cols = !Date, names_to = "Covariate", values_to = "Return")
+                'Commodity Index' = bbg_commodity_index,
+                'WTI Crude Oil Index' = wti_crude_oil,
+                '10-year Treasury Yield' = us_10_yr_yield,
+                'Dollar Strength Index' = dollar_strength_index)
+
+covmat_covariates <- covariates %>% select(-Date) %>%  
+  cov(use = "complete.obs") %>%
+  round(digits=3)
 
 covariates %>%
+  pivot_longer(cols = !Date, names_to = "Covariate", values_to = "Return") %>%
   ggplot() + aes(x = Date, y = Return, color = Covariate) + geom_line() + 
   labs(x = '', y = 'Log Returns') +
   facet_rep_wrap(~ Covariate, nrow = 2) +
@@ -360,12 +365,18 @@ ggsave('covariates.png', dpi = 'retina', path = 'plots/')
 
 # min and max values
 covariates %>%
-  summarise_at(vars(Return), list(min, max), na.rm = TRUE)
+  summarise_at(vars('WTI Crude Oil Index', '10-year Treasury Yield'), list(min, max), na.rm = TRUE)
 
-covariates %>% which.max(covariates$Return)
-covariates$Return[10199]
+which.max(covariates$'WTI Crude Oil Index') # row 2575
+covariates$Date[2575] # Date 2020-04-22
 
+which.max(covariates$'10-year Treasury Yield') # row 2550
+covariates$Date[2550] # Date 2020-03-17
+
+
+# price change series with adjusted y-axis
 covariates %>%
+  pivot_longer(cols = !Date, names_to = "Covariate", values_to = "Return") %>%
   ggplot() + aes(x = Date, y = Return, color = Covariate) + geom_line() + 
   labs(x = '', y = 'Log Returns') +
   ylim(-2.5, 2.5) +
