@@ -105,5 +105,11 @@ condCovariances <- lapply(1:ncol(x_full),
 
 names(condCovariances) <- data$Date
 
+conditionalDynamics <- list(condCovar = condCovariances,
+                            condEig = condEigenvals)
+
+saveRDS(conditionalDynamics, file = "data/conditionalDynamics5.rds")
+
+
 # calculate sample covariance matrix
 sampleCovariance <- cov(t(x))

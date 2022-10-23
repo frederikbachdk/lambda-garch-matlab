@@ -6,25 +6,36 @@ library(quadprog)
 library(scales)
 library(alabama)
 library(lemon)
+library(lubridate)
 
 # turn off scinumbers, clear console and memory
 options(scipen=999) 
 cat('\014')
 rm(list=ls())
 
-source('getPortfolios.R')
+# import functions
+source('R/getWeights.R')
+source('R/getPortfolios.R')
+
+# import data
+data <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'DATA_CLEAN') %>% 
+  mutate(Date = as.Date(Date))
+
+# calculate portfolio weights for preferred model
+trading <- getPortfolios(df = data, model = 5)
 
 #############################################################################
 ### illustrate portfolio weights ###
 #############################################################################
+
+regions <- c('Africa', 'Asia', 'Europe', 'Latin America', 'Middle East')
 
 tibble(
   'Naive' = trading$EW[1,1:5],
   'MVP' = trading$MVP[1,1:5],
   'Tangent' = trading$TAN[1,1:5],
   'Tangent (NTC)' = trading$NTC[1,1:5],
-  Region = x_trading %>% select(-Date, -rebalance) %>% colnames()
-) %>%
+  Region = regions) %>%
   pivot_longer(-Region,
                names_to = "strategy",
                values_to = "weights"
@@ -50,7 +61,7 @@ portfolios <- lapply(
   trading,
   as_tibble) %>%
   bind_rows(.id = "strategy") %>%
-  select(strategy, return)
+  select(strategy, Return)
 
 # append EMBIG return
 performance <- benchmark %>%

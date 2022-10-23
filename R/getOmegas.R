@@ -12,7 +12,6 @@ set.seed(2022)
 
 # import functions
 source('R/utils/estimationFunctions.R')
-source('R/utils/matrixFunctions.R')
 
 #############################################################################
 ### define sample period ###
@@ -91,6 +90,11 @@ condCovariances <- lapply(1:ncol(x_full),
                           ) 
 
 names(condCovariances) <- data$Date
+
+conditionalDynamics <- list(condCovar = condCovariances,
+                            condEig = condEigenvals)
+
+saveRDS(conditionalDynamics, file = "data/conditionalDynamics1.rds")
 
 # calculate sample covariance matrix
 sampleCovariance <- cov(t(x))
