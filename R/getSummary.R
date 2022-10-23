@@ -339,9 +339,9 @@ eig$vectors
 ###############################################################################
 
 commodity <- data %>% select(Date, bbg_commodity_index) %>%
-  ggplot() + aes(x = Date, y = bbg_commodity_index) + geom_line() +
+  ggplot() + aes(x = Date, y = bbg_commodity_index, color ='steelblue') + geom_line() +
   ggtitle('Commodity Index') +
-  labs(x = '', y = "Total Return (%)") +
+  labs(x = '', y = "Log change (%)") +
   ylim(-2.5, 2.5) +
   theme_classic() +
   theme(
@@ -354,9 +354,9 @@ commodity <- data %>% select(Date, bbg_commodity_index) %>%
   scale_color_jcolors(palette = "pal7")
 
 wti <- data %>% select(Date, wti_crude_oil) %>%
-  ggplot() + aes(x = Date, y = wti_crude_oil) + geom_line() +
+  ggplot() + aes(x = Date, y = wti_crude_oil, color ='steelblue') + geom_line() +
   ggtitle('WTI Crude Oil Index') +
-  labs(x = '', y = "Total Return (%)") +
+  labs(x = '', y = "Log change (%)") +
   theme_classic() +
   theme(
     axis.text = element_text(size = 10),
@@ -368,9 +368,9 @@ wti <- data %>% select(Date, wti_crude_oil) %>%
   scale_color_jcolors(palette = "pal7")
 
 treasury <- data %>% select(Date, us_10_yr_yield) %>%
-  ggplot() + aes(x = Date, y = us_10_yr_yield) + geom_line() +
+  ggplot() + aes(x = Date, y = us_10_yr_yield, color ='steelblue') + geom_line() +
   ggtitle('10-year Treasury Yield') +
-  labs(x = '', y = "Total Return (%)") +
+  labs(x = '', y = "Log change (%)") +
   theme_classic() +
   theme(
     axis.text = element_text(size = 10),
@@ -382,9 +382,9 @@ treasury <- data %>% select(Date, us_10_yr_yield) %>%
   scale_color_jcolors(palette = "pal7")
 
 dollar <- data %>% select(Date, dollar_strength_index) %>%
-  ggplot() + aes(x = Date, y = dollar_strength_index) + geom_line() +
+  ggplot() + aes(x = Date, y = dollar_strength_index, color ='steelblue') + geom_line() +
   ggtitle('Dollar Strength Index') +
-  labs(x = '', y = "Total Return (%)") +
+  labs(x = '', y = "Log change (%)") +
   ylim(-2.5, 2.5) +
   theme_classic() +
   theme(
@@ -397,7 +397,7 @@ dollar <- data %>% select(Date, dollar_strength_index) %>%
   scale_color_jcolors(palette = "pal7")
 
 grid.arrange(commodity, wti, treasury, dollar, nrow=2)
-ggsave('covariates.png', dpi = 'retina', path = 'plots/')
+#ggsave('covariates.png', dpi = 'retina', path = 'plots/')
 
 # min and max values
 covariates %>%
