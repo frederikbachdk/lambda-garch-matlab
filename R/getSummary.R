@@ -335,27 +335,61 @@ eig <- eigen(covmat)
 eig$vectors
 
 ###############################################################################
-# correlation plots
+# covariate time series plots
 ###############################################################################
-# import data
-data_x <- readxl::read_excel('data/covariates.xlsx', sheet = 'Indeces')
-data_x <- data_x %>% mutate(Date = as.Date(data_x$Date))
-indeces <- c('Date','BCOM','BCOMTR','BCOMIN','BCOMAG','BCOMEN','BCOIL','WCOIL','USGG10YR','BBDXY','JPEIDIVR')
-colnames(data_x) <- indeces
 
-data_x$BBDXY <- na_if(data_x$BBDXY, 0)
+covariates <- data %>% select(Date, 
+                'Commodity Index' = bbg_commodity_index,
+                'WTI Crude Oil Index' = wti_crude_oil,
+                '10-year Treasury Yield' = us_10_yr_yield,
+                'Dollar Strength Index' = dollar_strength_index)
 
-# 1. EMBIG return and commodity/10-yr rate/dollar
-#data_x %>% select(JPEIDIVR, BCOM, USGG10YR, BBDXY) %>%
-#  cor(use = "pairwise.complete.obs")
+covmat_covariates <- covariates %>% select(-Date) %>%  
+  cov(use = "complete.obs") %>%
+  round(digits=3)
 
-data_x_select1 <- data_x %>% select(JPEIDIVR, BCOM, USGG10YR, BBDXY)
-cor1 <- round(cor(data_x_select1, use = "pairwise.complete.obs"), 3)
+covariates %>%
+  pivot_longer(cols = !Date, names_to = "Covariate", values_to = "Return") %>%
+  ggplot() + aes(x = Date, y = Return, color = Covariate) + geom_line() + 
+  labs(x = '', y = 'Log Returns') +
+  facet_rep_wrap(~ Covariate, nrow = 2) +
+  theme_classic() +
+  theme(
+    axis.text = element_text(size = 10),
+    strip.background = element_blank(),
+    legend.position = "none") +
+  scale_x_date(breaks = scales::breaks_pretty(10)) +
+  scale_color_jcolors(palette = "pal7")
+
+ggsave('covariates.png', dpi = 'retina', path = 'plots/')
+
+# min and max values
+covariates %>%
+  summarise_at(vars('WTI Crude Oil Index', '10-year Treasury Yield'), list(min, max), na.rm = TRUE)
+
+which.max(covariates$'WTI Crude Oil Index') # row 2575
+covariates$Date[2575] # Date 2020-04-22
+
+which.max(covariates$'10-year Treasury Yield') # row 2550
+covariates$Date[2550] # Date 2020-03-17
 
 
-# 2. Total commodity individual commodities 
-data_x_select2 <- data_x %>% select(BCOM, BCOMIN, BCOMAG, BCOMEN, BCOIL)
-cor2 <- round(cor(data_x_select2, use = "pairwise.complete.obs"), 3)
+# price change series with adjusted y-axis
+covariates %>%
+  pivot_longer(cols = !Date, names_to = "Covariate", values_to = "Return") %>%
+  ggplot() + aes(x = Date, y = Return, color = Covariate) + geom_line() + 
+  labs(x = '', y = 'Log Returns') +
+  ylim(-2.5, 2.5) +
+  facet_rep_wrap(~ Covariate, nrow = 2) +
+  theme_classic() +
+  theme(
+    axis.text = element_text(size = 10),
+    strip.background = element_blank(),
+    legend.position = "none") +
+  scale_x_date(breaks = scales::breaks_pretty(10)) +
+  scale_color_jcolors(palette = "pal7")
+
+ggsave('covariates_adj.png', dpi = 'retina', path = 'plots/')
 
 
 ###############################################################################
