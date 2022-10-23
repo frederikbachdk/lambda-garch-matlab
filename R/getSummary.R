@@ -6,9 +6,9 @@ library(latex2exp)
 library(psych)
 library(lemon)
 library(dplyr)
-library(jcolors)
 source('R/utils/plotsFunctions.R')
-source('R/getOmegas.R')
+#source('R/getOmegas.R')
+source('R/getOmegasExtended.R')
 
 ### IMPORT DATA ###
 data <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'DATA_CLEAN') %>% 
@@ -385,7 +385,8 @@ eigplot1 <- condEigenvals_long %>%
     axis.text = element_text(size = 10), 
     strip.background = element_blank(),
     strip.text = element_text(size=10),
-    legend.position = 'bottom') + 
+    legend.position = 'bottom',
+    legend.text=element_text(size=10)) + 
   scale_x_date(breaks = scales::breaks_pretty(10)) +
   scale_color_manual(values = c("#4682b4",
                                   "#1b98e0",
@@ -408,7 +409,8 @@ eigplot2 <- condEigenvals_norm %>%
     axis.text = element_text(size = 10), 
     strip.background = element_blank(),
     strip.text = element_text(size=10),
-    legend.position = 'bottom') + 
+    legend.position = 'bottom',
+    legend.text=element_text(size=10)) + 
   scale_x_date(breaks = scales::breaks_pretty(10)) + 
   scale_color_manual(values = c("#4682b4",
                                   "#1b98e0",
@@ -706,8 +708,51 @@ grid.arrange(b11, b12, b21, b22, nrow=2)
 # rotated returns
 ###############################################################################
 
-theta_hat_standard <- readxl::read_excel('data/theta_hat_standardmodel.xlsx') %>%
-  as.matrix()
+rotation <- data %>% select(Date:'Middle East')
+rot_mat <- as.matrix(rotation[,2:6])
+rot_return <- matrix(NA, nrow = 3123, ncol = 5)
 
-theta_hat_extended <- readxl::read_excel('data/theta_hat_garchX.xlsx') %>%
-  as.matrix()
+rot_return[,1] <- t(t(V[,1]) %*% t(rot_mat)) 
+rot_return[,2] <- t(t(V[,2]) %*% t(rot_mat)) 
+rot_return[,3] <- t(t(V[,3]) %*% t(rot_mat)) 
+rot_return[,4] <- t(t(V[,4]) %*% t(rot_mat)) 
+rot_return[,5] <- t(t(V[,5]) %*% t(rot_mat)) 
+
+rotation <- rotation %>% select(Date) %>% cbind(rot_return)
+
+colnames(rotation) <- c('Date', 
+                        'Rotation 1', 
+                        'Rotation 2', 
+                        'Rotation 3', 
+                        'Rotation 4', 
+                        'Rotation 5')
+rotation <- rotation %>% 
+  pivot_longer(cols = 'Rotation 1':'Rotation 5', 
+               names_to = 'Group',
+               values_to = 'Return') %>%
+  select(Date, Group, Return)
+
+# Figure: Rotated returns
+rotation$Group <- factor(rotation$Group, 
+                                 levels=c('Rotation 1',
+                                          'Rotation 2',
+                                          'Rotation 3',
+                                          'Rotation 4',
+                                          'Rotation 5')) 
+rotation %>%
+  ggplot() + 
+  geom_line(mapping = aes(x = Date, y = Return), color = 'steelblue') +
+  ylim(-2.5, 2.5) + 
+  facet_rep_wrap(~ Group, nrow = 4, repeat.tick.labels = TRUE) +
+  theme(legend.position="none") +
+  labs(x = '', y = 'Rotated return (%)') + 
+  theme_classic() +
+  theme(
+    axis.text = element_text(size = 10), 
+    strip.background = element_blank(),
+    strip.text = element_text(size=10)) + 
+  scale_x_date(breaks = scales::breaks_pretty(10))
+
+ggsave('rotated_returns.png', dpi = 'retina',
+       path = 'plots/')
+

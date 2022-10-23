@@ -5,10 +5,9 @@ library(ggplotify)
 library(latex2exp)
 library(lemon)
 library(dplyr)
-library(jcolors)
-jcolors('default')
 source('utils/plotsFunctions.R')
-source('getOmegas.R')
+#source('getOmegas.R')
+source('getOmegasExtended.R')
 
 
 ### IMPORT DATA ###
