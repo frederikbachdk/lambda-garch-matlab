@@ -338,29 +338,65 @@ eig$vectors
 # covariate time series plots
 ###############################################################################
 
-covariates <- data %>% select(Date, 
-                'Commodity Index' = bbg_commodity_index,
-                'WTI Crude Oil Index' = wti_crude_oil,
-                '10-year Treasury Yield' = us_10_yr_yield,
-                'Dollar Strength Index' = dollar_strength_index)
-
-covmat_covariates <- covariates %>% select(-Date) %>%  
-  cov(use = "complete.obs") %>%
-  round(digits=3)
-
-covariates %>%
-  pivot_longer(cols = !Date, names_to = "Covariate", values_to = "Return") %>%
-  ggplot() + aes(x = Date, y = Return, color = Covariate) + geom_line() + 
-  labs(x = '', y = 'Log Returns') +
-  facet_rep_wrap(~ Covariate, nrow = 2) +
+commodity <- data %>% select(Date, bbg_commodity_index) %>%
+  ggplot() + aes(x = Date, y = bbg_commodity_index) + geom_line() +
+  ggtitle('Commodity Index') +
+  labs(x = '', y = "Total Return (%)") +
+  ylim(-2.5, 2.5) +
   theme_classic() +
   theme(
     axis.text = element_text(size = 10),
     strip.background = element_blank(),
-    legend.position = "none") +
+    strip.text = element_text(size=10),
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5, size = 10)) +
   scale_x_date(breaks = scales::breaks_pretty(10)) +
   scale_color_jcolors(palette = "pal7")
 
+wti <- data %>% select(Date, wti_crude_oil) %>%
+  ggplot() + aes(x = Date, y = wti_crude_oil) + geom_line() +
+  ggtitle('WTI Crude Oil Index') +
+  labs(x = '', y = "Total Return (%)") +
+  theme_classic() +
+  theme(
+    axis.text = element_text(size = 10),
+    strip.background = element_blank(),
+    strip.text = element_text(size=10),
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5, size = 10)) +
+  scale_x_date(breaks = scales::breaks_pretty(10)) +
+  scale_color_jcolors(palette = "pal7")
+
+treasury <- data %>% select(Date, us_10_yr_yield) %>%
+  ggplot() + aes(x = Date, y = us_10_yr_yield) + geom_line() +
+  ggtitle('10-year Treasury Yield') +
+  labs(x = '', y = "Total Return (%)") +
+  theme_classic() +
+  theme(
+    axis.text = element_text(size = 10),
+    strip.background = element_blank(),
+    strip.text = element_text(size=10),
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5, size = 10)) +
+  scale_x_date(breaks = scales::breaks_pretty(10)) +
+  scale_color_jcolors(palette = "pal7")
+
+dollar <- data %>% select(Date, dollar_strength_index) %>%
+  ggplot() + aes(x = Date, y = dollar_strength_index) + geom_line() +
+  ggtitle('Dollar Strength Index') +
+  labs(x = '', y = "Total Return (%)") +
+  ylim(-2.5, 2.5) +
+  theme_classic() +
+  theme(
+    axis.text = element_text(size = 10),
+    strip.background = element_blank(),
+    strip.text = element_text(size=10),
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5, size = 10)) +
+  scale_x_date(breaks = scales::breaks_pretty(10)) +
+  scale_color_jcolors(palette = "pal7")
+
+grid.arrange(commodity, wti, treasury, dollar, nrow=2)
 ggsave('covariates.png', dpi = 'retina', path = 'plots/')
 
 # min and max values
@@ -372,24 +408,6 @@ covariates$Date[2575] # Date 2020-04-22
 
 which.max(covariates$'10-year Treasury Yield') # row 2550
 covariates$Date[2550] # Date 2020-03-17
-
-
-# price change series with adjusted y-axis
-covariates %>%
-  pivot_longer(cols = !Date, names_to = "Covariate", values_to = "Return") %>%
-  ggplot() + aes(x = Date, y = Return, color = Covariate) + geom_line() + 
-  labs(x = '', y = 'Log Returns') +
-  ylim(-2.5, 2.5) +
-  facet_rep_wrap(~ Covariate, nrow = 2) +
-  theme_classic() +
-  theme(
-    axis.text = element_text(size = 10),
-    strip.background = element_blank(),
-    legend.position = "none") +
-  scale_x_date(breaks = scales::breaks_pretty(10)) +
-  scale_color_jcolors(palette = "pal7")
-
-ggsave('covariates_adj.png', dpi = 'retina', path = 'plots/')
 
 
 ###############################################################################
