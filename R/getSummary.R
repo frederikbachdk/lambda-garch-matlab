@@ -339,7 +339,7 @@ eig$vectors
 ###############################################################################
 
 commodity <- data %>% select(Date, bbg_commodity_index) %>%
-  ggplot() + aes(x = Date, y = bbg_commodity_index, color ='steelblue') + geom_line() +
+  ggplot() + geom_line(mapping = aes(x = Date, y = bbg_commodity_index), color = 'steelblue') +
   ggtitle('Commodity Index') +
   labs(x = '', y = "Log change (%)") +
   ylim(-2.5, 2.5) +
@@ -352,8 +352,9 @@ commodity <- data %>% select(Date, bbg_commodity_index) %>%
     plot.title = element_text(hjust = 0.5, size = 10)) +
   scale_x_date(breaks = scales::breaks_pretty(10)) 
 
+
 wti <- data %>% select(Date, wti_crude_oil) %>%
-  ggplot() + aes(x = Date, y = wti_crude_oil, color ='steelblue') + geom_line() +
+  ggplot() + geom_line(mapping = aes(x = Date, y = wti_crude_oil), color = 'steelblue') +
   ggtitle('WTI Crude Oil Index') +
   labs(x = '', y = "Log change (%)") +
   theme_classic() +
@@ -366,7 +367,7 @@ wti <- data %>% select(Date, wti_crude_oil) %>%
   scale_x_date(breaks = scales::breaks_pretty(10)) 
 
 treasury <- data %>% select(Date, us_10_yr_yield) %>%
-  ggplot() + aes(x = Date, y = us_10_yr_yield, color ='steelblue') + geom_line() +
+  ggplot() + geom_line(mapping = aes(x = Date, y = us_10_yr_yield), color = 'steelblue') +
   ggtitle('10-year Treasury Yield') +
   labs(x = '', y = "Log change (%)") +
   theme_classic() +
@@ -379,7 +380,7 @@ treasury <- data %>% select(Date, us_10_yr_yield) %>%
   scale_x_date(breaks = scales::breaks_pretty(10)) 
 
 dollar <- data %>% select(Date, dollar_strength_index) %>%
-  ggplot() + aes(x = Date, y = dollar_strength_index, color ='steelblue') + geom_line() +
+  ggplot() + geom_line(mapping = aes(x = Date, y = dollar_strength_index), color = 'steelblue') +
   ggtitle('Dollar Strength Index') +
   labs(x = '', y = "Log change (%)") +
   ylim(-2.5, 2.5) +
