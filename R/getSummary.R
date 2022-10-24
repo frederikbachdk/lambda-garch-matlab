@@ -8,7 +8,7 @@ library(lemon)
 library(dplyr)
 source('R/utils/plotsFunctions.R')
 #source('R/getOmegas.R')
-source('R/getOmegasExtended.R')
+#source('R/getOmegasExtended.R')
 
 ### IMPORT DATA ###
 data <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'DATA_CLEAN') %>% 
@@ -350,8 +350,7 @@ commodity <- data %>% select(Date, bbg_commodity_index) %>%
     strip.text = element_text(size=10),
     legend.position = "none",
     plot.title = element_text(hjust = 0.5, size = 10)) +
-  scale_x_date(breaks = scales::breaks_pretty(10)) +
-  scale_color_jcolors(palette = "pal7")
+  scale_x_date(breaks = scales::breaks_pretty(10)) 
 
 wti <- data %>% select(Date, wti_crude_oil) %>%
   ggplot() + aes(x = Date, y = wti_crude_oil, color ='steelblue') + geom_line() +
@@ -364,8 +363,7 @@ wti <- data %>% select(Date, wti_crude_oil) %>%
     strip.text = element_text(size=10),
     legend.position = "none",
     plot.title = element_text(hjust = 0.5, size = 10)) +
-  scale_x_date(breaks = scales::breaks_pretty(10)) +
-  scale_color_jcolors(palette = "pal7")
+  scale_x_date(breaks = scales::breaks_pretty(10)) 
 
 treasury <- data %>% select(Date, us_10_yr_yield) %>%
   ggplot() + aes(x = Date, y = us_10_yr_yield, color ='steelblue') + geom_line() +
@@ -378,8 +376,7 @@ treasury <- data %>% select(Date, us_10_yr_yield) %>%
     strip.text = element_text(size=10),
     legend.position = "none",
     plot.title = element_text(hjust = 0.5, size = 10)) +
-  scale_x_date(breaks = scales::breaks_pretty(10)) +
-  scale_color_jcolors(palette = "pal7")
+  scale_x_date(breaks = scales::breaks_pretty(10)) 
 
 dollar <- data %>% select(Date, dollar_strength_index) %>%
   ggplot() + aes(x = Date, y = dollar_strength_index, color ='steelblue') + geom_line() +
@@ -393,8 +390,7 @@ dollar <- data %>% select(Date, dollar_strength_index) %>%
     strip.text = element_text(size=10),
     legend.position = "none",
     plot.title = element_text(hjust = 0.5, size = 10)) +
-  scale_x_date(breaks = scales::breaks_pretty(10)) +
-  scale_color_jcolors(palette = "pal7")
+  scale_x_date(breaks = scales::breaks_pretty(10))
 
 grid.arrange(commodity, wti, treasury, dollar, nrow=2)
 #ggsave('covariates.png', dpi = 'retina', path = 'plots/')
