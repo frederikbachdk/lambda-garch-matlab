@@ -83,7 +83,7 @@ condEigenvals <- data %>% select(Date) %>%
 
 # estimate lambdas out of sample
 for(t in (row_end+1):(ncol(x_full))){
-
+  
   # set date
   condEigenvals[t,1] <- data[t,1]
   
@@ -94,6 +94,7 @@ for(t in (row_end+1):(ncol(x_full))){
 
   # save in tibble
   condEigenvals[t,2:(2+p-1)] <- lambda_t
+  
 }
 
 # estimate Omegas out of sample
