@@ -1,3 +1,12 @@
+# IMPORT PACKAGES
+library(tidyverse)
+library(gridExtra)
+library(ggplotify)
+library(latex2exp)
+library(psych)
+library(lemon)
+library(dplyr)
+
 acf_plot <- function(x, region, lag.max = 30){
   
   # function to plot ACFs.
