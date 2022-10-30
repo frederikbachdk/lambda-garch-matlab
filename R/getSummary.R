@@ -1,14 +1,4 @@
-# IMPORT PACKAGES
-library(tidyverse)
-library(gridExtra)
-library(ggplotify)
-library(latex2exp)
-library(psych)
-library(lemon)
-library(dplyr)
 source('R/utils/plotsFunctions.R')
-#source('R/getOmegas.R')
-#source('R/getOmegasExtended.R')
 
 ### IMPORT DATA ###
 data <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'DATA_CLEAN') %>% 
@@ -345,13 +335,12 @@ commodity <- data %>% select(Date, bbg_commodity_index) %>%
   ylim(-2.5, 2.5) +
   theme_classic() +
   theme(
-    axis.text = element_text(size = 10),
+    axis.text = element_text(size = 18),
     strip.background = element_blank(),
-    strip.text = element_text(size=10),
+    strip.text = element_text(size=18),
     legend.position = "none",
-    plot.title = element_text(hjust = 0.5, size = 10)) +
+    plot.title = element_text(hjust = 0.5, size = 18)) +
   scale_x_date(breaks = scales::breaks_pretty(10)) 
-
 
 wti <- data %>% select(Date, wti_crude_oil) %>%
   ggplot() + geom_line(mapping = aes(x = Date, y = wti_crude_oil), color = 'steelblue') +
@@ -359,11 +348,11 @@ wti <- data %>% select(Date, wti_crude_oil) %>%
   labs(x = '', y = "Log change (%)") +
   theme_classic() +
   theme(
-    axis.text = element_text(size = 10),
+    axis.text = element_text(size = 18),
     strip.background = element_blank(),
-    strip.text = element_text(size=10),
+    strip.text = element_text(size=18),
     legend.position = "none",
-    plot.title = element_text(hjust = 0.5, size = 10)) +
+    plot.title = element_text(hjust = 0.5, size = 18)) +
   scale_x_date(breaks = scales::breaks_pretty(10)) 
 
 treasury <- data %>% select(Date, us_10_yr_yield) %>%
@@ -372,11 +361,11 @@ treasury <- data %>% select(Date, us_10_yr_yield) %>%
   labs(x = '', y = "Log change (%)") +
   theme_classic() +
   theme(
-    axis.text = element_text(size = 10),
+    axis.text = element_text(size = 18),
     strip.background = element_blank(),
-    strip.text = element_text(size=10),
+    strip.text = element_text(size=18),
     legend.position = "none",
-    plot.title = element_text(hjust = 0.5, size = 10)) +
+    plot.title = element_text(hjust = 0.5, size = 18)) +
   scale_x_date(breaks = scales::breaks_pretty(10)) 
 
 dollar <- data %>% select(Date, dollar_strength_index) %>%
@@ -386,11 +375,11 @@ dollar <- data %>% select(Date, dollar_strength_index) %>%
   ylim(-2.5, 2.5) +
   theme_classic() +
   theme(
-    axis.text = element_text(size = 10),
+    axis.text = element_text(size = 18),
     strip.background = element_blank(),
-    strip.text = element_text(size=10),
+    strip.text = element_text(size=18),
     legend.position = "none",
-    plot.title = element_text(hjust = 0.5, size = 10)) +
+    plot.title = element_text(hjust = 0.5, size = 18)) +
   scale_x_date(breaks = scales::breaks_pretty(10))
 
 grid.arrange(commodity, wti, treasury, dollar, nrow=2)
@@ -804,4 +793,41 @@ rotation %>%
 
 ggsave('rotated_returns.png', dpi = 'retina',
        path = 'plots/')
+
+
+###############################################################################
+# conditional variances
+###############################################################################
+
+condDynamics1 <- readRDS('data/conditionalDynamics1.rds')
+condDynamics2 <- readRDS('data/conditionalDynamics2.rds')
+condDynamics3 <- readRDS('data/conditionalDynamics3.rds')
+condDynamics4 <- readRDS('data/conditionalDynamics4.rds')
+condDynamics5 <- readRDS('data/conditionalDynamics5.rds')
+
+condVar1 <- condDynamics1$condCovar
+condVar2 <- condDynamics2$condCovar
+condVar3 <- condDynamics3$condCovar
+condVar4 <- condDynamics4$condCovar
+condVar5 <- condDynamics5$condCovar
+
+rm(condDynamics1, condDynamics2, condDynamics3, condDynamics4, condDynamics5)
+
+latam1 <- map(condVar1, 1) %>% as.matrix() %>% unlist()
+latam2 <- map(condVar1, 2) %>% as.matrix() %>% unlist()
+latam3 <- map(condVar1, 3) %>% as.matrix() %>% unlist()
+latam4 <- map(condVar1, 4) %>% as.matrix() %>% unlist()
+latam5 <- map(condVar1, 5) %>% as.matrix() %>% unlist()
+
+condVar_latam <- cbind(data %>% select(Date), latam1, latam2, latam3, latam4, latam5) 
+colnames(condVar_latam) <- c('Date', 'Model 1', 'Model 2', 'Model 3', 'Model 4', 'Model 5')
+
+tib_condVar_latam <- condVar_latam %>% tibble() %>% pivot_longer(cols = 'Model 1':'Model 5', 
+                                            names_to = 'Model', 
+                                            values_to = 'condVar')
+
+tib_condVar_latam %>% ggplot() + 
+  aes(x = Date, y = condVar, color = Model) + 
+  geom_line() +
+  theme_classic()
 
