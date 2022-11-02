@@ -24,6 +24,10 @@ tangentWeights <- function(Omega, mu, gamma = 4){
 }
 
 
+
+
+
+
 tangentNTCWeights <- function(Omega, mu, gamma = 4, beta = 50) {
   iota <- rep(1, ncol(Omega))
   Omega_inv <- solve(Omega)

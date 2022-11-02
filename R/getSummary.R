@@ -12,6 +12,8 @@ weights <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'WEIGHTS_CLEAN'
   filter(Date >= '2010-01-01') %>%
   mutate(Date = as.Date(Date))
 
+data_etf <- data <- readxl::read_excel('data/01112022_ETF.xlsx', sheet = 'PRICES') %>% 
+  mutate(Date = as.Date(Date)) 
 
 ### PIVOT DATA  ###
 data_viz <- data %>% 
@@ -796,38 +798,25 @@ ggsave('rotated_returns.png', dpi = 'retina',
 
 
 ###############################################################################
-# conditional variances
+# Africa ETF vs EMBIG
 ###############################################################################
+scale = 15
 
-condDynamics1 <- readRDS('data/conditionalDynamics1.rds')
-condDynamics2 <- readRDS('data/conditionalDynamics2.rds')
-condDynamics3 <- readRDS('data/conditionalDynamics3.rds')
-condDynamics4 <- readRDS('data/conditionalDynamics4.rds')
-condDynamics5 <- readRDS('data/conditionalDynamics5.rds')
+data_etf %>% clean_names() %>%
+  ggplot() + aes(x = date, y = spfiglad_index) +
+  geom_line(aes(color = "S&P Africa Index")) +
+  geom_line(aes(y = jpgcafri_index/scale,
+                color = "J.P. Morgan EMBIG Africa Index"))+
+  scale_x_continuous(breaks = seq(0, 336, 24)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*scale, name="EMBIG Africa Index Price")) +
+  labs(x = "", y = "S&P Africa Index Price", color = "") +
+  scale_color_manual(values = c("orange2", "gray50")) +
+  theme_classic() +
+  theme(
+    axis.text = element_text(size = 10), 
+    strip.background = element_blank(),
+    strip.text = element_text(size=10),
+    legend.position = 'bottom') 
 
-condVar1 <- condDynamics1$condCovar
-condVar2 <- condDynamics2$condCovar
-condVar3 <- condDynamics3$condCovar
-condVar4 <- condDynamics4$condCovar
-condVar5 <- condDynamics5$condCovar
-
-rm(condDynamics1, condDynamics2, condDynamics3, condDynamics4, condDynamics5)
-
-latam1 <- map(condVar1, 1) %>% as.matrix() %>% unlist()
-latam2 <- map(condVar1, 2) %>% as.matrix() %>% unlist()
-latam3 <- map(condVar1, 3) %>% as.matrix() %>% unlist()
-latam4 <- map(condVar1, 4) %>% as.matrix() %>% unlist()
-latam5 <- map(condVar1, 5) %>% as.matrix() %>% unlist()
-
-condVar_latam <- cbind(data %>% select(Date), latam1, latam2, latam3, latam4, latam5) 
-colnames(condVar_latam) <- c('Date', 'Model 1', 'Model 2', 'Model 3', 'Model 4', 'Model 5')
-
-tib_condVar_latam <- condVar_latam %>% tibble() %>% pivot_longer(cols = 'Model 1':'Model 5', 
-                                            names_to = 'Model', 
-                                            values_to = 'condVar')
-
-tib_condVar_latam %>% ggplot() + 
-  aes(x = Date, y = condVar, color = Model) + 
-  geom_line() +
-  theme_classic()
-
+ggsave('embig_vs_etf.png', dpi = 'retina',
+       path = 'plots/')
