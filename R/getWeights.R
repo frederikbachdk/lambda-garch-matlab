@@ -44,7 +44,7 @@ minimumVarWeights <- function(Omega) {
   return(w)
 }
 
-tangentWeights <- function(Omega, mu, mu_bar){
+efficientWeights <- function(Omega, mu, mu_bar){
   # function to calculate the efficient portfolio given return target
   # input:
     # Omega  (matrix): Positive definite conditional covariance matrix
