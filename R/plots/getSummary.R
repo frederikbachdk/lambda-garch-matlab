@@ -402,6 +402,9 @@ covariates$Date[2550] # Date 2020-03-17
 # eigenvalue plots
 ###############################################################################
 
+condDynamics5 <- readRDS('data/conditionalDynamics5.rds')
+condEigenvals <- condDynamics5$condEig
+
 # create normalized eigenvalues
 condEigenvals_norm <- condEigenvals %>% 
   mutate(row_sum = rowSums(select(., 2:6))) %>% 
@@ -422,11 +425,11 @@ eigplot1 <- condEigenvals_long %>%
   labs(x = '', y = 'Eigenvalue') + 
   theme_classic() + 
   theme(
-    axis.text = element_text(size = 10), 
+    axis.text = element_text(size = 14), 
     strip.background = element_blank(),
-    strip.text = element_text(size=10),
+    strip.text = element_text(size=14),
     legend.position = 'bottom',
-    legend.text=element_text(size=10)) + 
+    legend.text=element_text(size=14)) + 
   scale_x_date(breaks = scales::breaks_pretty(10)) +
   scale_color_manual(values = c("#4682b4",
                                   "#1b98e0",
@@ -446,11 +449,11 @@ eigplot2 <- condEigenvals_norm %>%
   labs(x = '', y = 'Proportion of Variance') + 
   theme_classic() + 
   theme(
-    axis.text = element_text(size = 10), 
+    axis.text = element_text(size = 14), 
     strip.background = element_blank(),
-    strip.text = element_text(size=10),
+    strip.text = element_text(size=14),
     legend.position = 'bottom',
-    legend.text=element_text(size=10)) + 
+    legend.text=element_text(size=14)) + 
   scale_x_date(breaks = scales::breaks_pretty(10)) + 
   scale_color_manual(values = c("#4682b4",
                                   "#1b98e0",

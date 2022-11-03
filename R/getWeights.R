@@ -18,7 +18,7 @@ tangentWeights <- function(Omega, mu, gamma = 4){
   iota <- rep(1, ncol(Omega))
   Omega_inv <- solve(Omega)
   w_init <- (Omega_inv %*% iota) / sum(Omega_inv %*% iota)
-  w_tan <- w_init + 1 / gamma * (Omega_inv - w_init %*% t(iota) %*% Omega_inv) %*% mu
+  w_tan <- w_init + 1/gamma * (Omega_inv - w_init %*% t(iota) %*% Omega_inv) %*% mu*100
   
   return(as.vector(w_tan))
 }

@@ -3,7 +3,7 @@ library(quadprog)
 
 # import data 
 data <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'DATA_CLEAN') %>% 
-  filter(Date >= '2010-01-01') %>%
+  filter(Date >= as.Date('2019-01-01'), Date <= as.Date('2020-01-01')) %>%
   mutate(Date = as.Date(Date)) %>%
   rename('EMBIG' = 'EMBIG Div') %>% 
   select(Date:EMBIG)
@@ -12,8 +12,11 @@ data <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'DATA_CLEAN') %>%
 condDynamics5 <- readRDS('data/conditionalDynamics5.rds')
 condVar5 <- condDynamics5$condCovar
 Omega <- condVar5[['2020-01-02']] * 250
+colnames(Omega) <- c('Africa', 'Asia', 'Europe', 'Latin America', 'Middle East')
+
 mu <- data %>%
   select(-Date, -EMBIG) %>% colMeans() %>% as.matrix() * 250
+colnames(mu) <- 'mu'
 
 # calculate optimal weights
 
@@ -46,15 +49,18 @@ compute_efficient_frontier <- function(Omega,mu){
   wmvp <- wmvp / sum(wmvp)
   
   # Compute the efficient portfolio weights
-  mu_bar <- mu + 0.5 # return target 
-  C <- as.numeric(t(iota)%*%solve(Omega)%*%iota)
-  D <- as.numeric(t(iota)%*%solve(Omega)%*%mu)
-  E <- as.numeric(t(mu)%*%solve(Omega)%*%mu)
-  lambda_tilde <- as.numeric(2*(mu_bar - D/C)/(E - D^2/C))
-  weff <- wmvp + lambda_tilde/2*(solve(Omega)%*%mu - D/C*solve(Omega)%*%iota)
+  w_efficient <- solve.QP(
+    Dmat = 2 * Omega,
+    dvec = mu,
+    Amat = cbind(rep(1, 5)),
+    bvec = 1,
+    meq = 1
+  )
+  
+  weff <- w_efficient$solution
   
   # Calculate efficient frontier
-  c <- seq(from = -2, to = 2, by = 0.01)
+  c <- seq(from = -1.5, to = 1.5, by = 0.001)
   res <- tibble(c = c, 
                 mu = NA,
                 sd = NA)
@@ -71,27 +77,30 @@ compute_efficient_frontier <- function(Omega,mu){
 
 # save effecient frontier computed from the function
 results <- compute_efficient_frontier(Omega,mu)
+regions <- cbind(mu, sd = sqrt(diag(Omega))) %>% data.frame()
+minvar <- results %>% filter(c == c(0)) %>% data.frame() %>%
+  select(-c) 
+rownames(minvar) <- 'Min. Var.'
+
+eff <- results %>% filter(c == c(1)) %>% data.frame() %>%
+  select(-c) 
+rownames(eff) <- 'Eff. Port.'
+
 
 # visualize the efficient frontier
-ggplot(results, aes(x = sd, y = mu)) + 
-  geom_point() +
-  geom_point(data = results %>% filter(c %in% c(0,1)), 
-             color = "red",
-             size = 4) +              # locate the mvp and efficient portfolio
-  geom_point(data = tibble(mu = mu, sd = sqrt(diag(Omega))), 
-             aes(y = mu, x  = sd), color = "blue", size = 1) + 
+regions %>% ggplot() +
+  aes(x = sd, y = mu) + 
+  geom_point(colour = 'steelblue', size = 2.5) +
+  geom_point(data = results, aes(x = sd, y = mu)) +
+  geom_point(colour = 'steelblue', size = 2.5) +
+  geom_point(data = minvar, aes(x = sd, y = mu),colour = 'red', size = 3) +
+  geom_point(data = eff, aes(x = sd, y = mu),colour = 'red', size = 3) +
+  geom_text(hjust=0, vjust=1.5, aes(label = rownames(regions)), size = 5) +
+  geom_text(data = minvar, hjust=-0.2, vjust=-0.3, aes(label = rownames(minvar)), size = 5) +
+  geom_text(data = eff, hjust=0.4, vjust=-1.5, aes(label = rownames(eff)), size = 5) +
   labs(y = 'Annualized return (%)', x = 'Annualized standard deviation (%)') +
-  
-  # plot the individual assets
-  
-  theme(plot.title = element_text(hjust=0.5, color = "black", size = 12, 
-                                  face = "bold"),
-        plot.caption = element_text(color = "black", face = "italic"),
-        panel.background = element_rect(fill="white", colour="grey", 
-                                        linetype="solid"),
-        panel.grid.major = element_line(size = 0.25, linetype = 'solid',
-                                        colour = "grey"), 
-        panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
-                                        colour = "grey")) +
-  theme_classic()
+  theme_classic() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 14),
+        ) 
 

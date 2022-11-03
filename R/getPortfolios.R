@@ -33,7 +33,7 @@ getPortfolios <- function(df,
   ### portfolio optimization ###
   #############################################################################
  
-  # indicate first trading day of month (:= re-balance day)
+  # indicate first trading day of month (= re-balance day)
   x_trading <- x_trading %>%
     mutate(rebalance = case_when(
       month(Date) > month(lag(Date)) ~ 1,
@@ -63,7 +63,7 @@ getPortfolios <- function(df,
   
   trading$EW[1,1:5]  <- equalWeights(n = 5)
   trading$MVP[1,1:5] <- minimumVarWeights(Omega_int)
-  trading$TAN[1,1:5] <- tangentWeights(Omega_int, mu = mu, gamma = 4)
+  trading$TAN[1,1:5] <- tangentWeights(Omega_int, mu = mu, gamma = 2)
   trading$NTC[1,1:5] <- tangentNTCWeights(Omega_int, mu = mu, gamma = 4, beta = 50)
   
   # initialize portfolio returns

@@ -2,8 +2,8 @@
 ### load libraries and settings ###
 #############################################################################
 library(tidyverse)
-library(tictoc)
 library(gridExtra) # gridExtra is loaded for figures
+library(EnvStats)
 
 # turn off scinumbers, clear console and memory
 options(scipen=999) 
@@ -15,8 +15,6 @@ source('R/utils/simulationFunctions.R')
 
 # define the "true" DGP and calculate the log-likelihood
 set.seed(2022)
-ARCH1_true <- ARCH1(T = 10000, x0 = 0, omega = 1, alpha = 0)
-loglik_true <- ARCH1_loglikelihood(omega = 1, alpha = 0, y = ARCH1_true$x)
 
 N <- 1000 # number of simulations
 
@@ -33,18 +31,24 @@ for(n in (1:N)){
   print(paste0('Series ', n, ' out of ', N))
   
   # simulate ARCH and maximize log likelihood function
-  ARCH1_sim <- ARCH1(T = 10000, x0 = 0, omega = 1, alpha = 0)
-  solution <- optim(par = 0.2,
+  ARCH1_sim <- ARCH1(T = 2000, x0 = 0, omega = 1, alpha = c(0.5,0))
+  y <- ARCH1_sim$x
+  
+  # calculate MLE for unrestricted theta
+  solution <- optim(par = c(1,0.5,0.01),
                     fn = negative_loglik,method = "L-BFGS-B",
-                    lower = 0,
+                    lower = c(0,1e-10,1e-10),
                     hessian = TRUE) 
   
-  loglik_sim <- -solution$value
+  # calculate MLE for restricted theta
+  loglik_unr <- -solution$value
+  
+  loglik_res <- ARCH1_loglikelihood(theta = c(solution$par[1],solution$par[2],0), y)
   
   # calculate LR statistic for alpha = 0
-  simulations$LR[n] <- -2*(loglik_sim - loglik_true)
+  simulations$LR[n] <- -2*(loglik_res - loglik_unr)
   }
 
-
-
+epdfPlot(simulations$LR)
+quantile(simulations$LR, 0.95)
 
