@@ -1,5 +1,6 @@
 # for testing:
 library(tidyverse)
+library(alabama)
 condDynamics1 <- readRDS('data/conditionalDynamics1.rds')
 Omega <- condDynamics1$condCovar[['2019-01-02']]
 
@@ -34,7 +35,7 @@ minimumVarWeights <- function(Omega) {
     # Omega (matrix): Positive definite covariance matrix
   
   # output:
-  # w (array): array of equal weights
+  # w (array): array of minimum variance weights
   
   iota <- rep(1, ncol(Omega))
   Omega_inv <- solve(Omega)
@@ -52,7 +53,7 @@ efficientWeights <- function(Omega, mu, mu_bar){
     # mu_bar (array): Return target
   
   # output:
-    # w (array): array of equal weights
+    # w (array): array of efficient weights
 
   iota <- rep(1,ncol(Omega))         # (N x 1) vector of 1's
   Omega_inv <- solve(Omega)          # Omega inverse
@@ -71,35 +72,26 @@ efficientWeights <- function(Omega, mu, mu_bar){
 }
 
 
-
-tangentNTCWeights <- function(Omega, mu, mu_bar, beta = 50) {
+efficientWeights_costOpt <- function(Omega, mu, gamma = 2, w_init, beta = 5) {
   # function to calculate the efficient portfolio given return target
   # input:
-  # Omega  (matrix): Positive definite conditional covariance matrix
-  # mu     (array): Conditionally expected return
-  # mu_bar (array): Return target
+    # Omega  (matrix): Positive definite conditional covariance matrix
+    # mu     (array): Conditionally expected return
+    # gamma  (dbl): Risk aversion coefficient
+    # w_init (array): Weights before rebalancing
+    # beta   (dbl): Transaction cost parameter (basis points)
   
   # output:
-  # w (array): array of equal weights
-    
-    
-  iota <- rep(1, ncol(Omega))
-  Omega_inv <- solve(Omega)
-  w_init <- (Omega_inv %*% iota) / sum(Omega_inv %*% iota)    # MVP
-  
-  #w_init <- rep(1 / ncol(Omega), ncol(Omega))                # Equal weights
+    # w (array): array of optimal weight allocation
   
   objective <- function(w) {
-    -t(w) %*% mu + gamma / 2 * t(w) %*% Omega %*% w +
-      (beta / 10000) / 2 * t(w - w_init) %*% (w - w_init)
+    -t(w) %*% mu + gamma / 2 * t(w) %*% Omega %*% w + beta / 2 * t(w - w_init) %*% (w - w_init)
   }
   
   w_optimal <- constrOptim.nl(
     par = w_init,
     fn = objective,
-    heq = function(w) {
-      sum(w) - 1
-    },
+    heq = function(w) sum(w) - 1,
     control.outer = list(trace = FALSE)
   )
   
