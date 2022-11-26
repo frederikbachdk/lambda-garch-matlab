@@ -107,19 +107,15 @@ rm(list=setdiff(ls(), "condVar_tib"))
 # conditional variances - plot data
 ###############################################################################
 
-condVar_tib %>% filter(grepl('Cov_Europe_MidEast', model),
-                       Date > as.Date('2019-12-31'),
-                       Date <= as.Date('2020-12-31')) %>%
+condVar_tib %>% filter(grepl('Var_Africa', model),
+                       Date <= as.Date('2019-12-31')) %>%
   ggplot() + aes(x = Date, y = condVar, color = model) + geom_line() +
-  labs(x = '', y = 'Conditional Covariance') + 
+  labs(x = '', y = 'Conditional Variance') + 
   theme_classic() + 
   theme(
-    axis.text = element_text(size = 13.5),
-    axis.title = element_text(size = 16),
-    legend.text = element_text(size = 14),
-    legend.title = element_text(size = 14),
+    axis.text = element_text(size = 10), 
     strip.background = element_blank(),
-    strip.text = element_text(size=16),
+    strip.text = element_text(size=10),
     legend.position = 'bottom') +
   scale_x_date(breaks = scales::breaks_pretty(10)) +
   scale_color_manual(values = c("#4682b4",
@@ -135,23 +131,8 @@ condVar_tib %>% filter(grepl('Cov_Europe_MidEast', model),
                      name = 'Model') +
   guides(colour = guide_legend(override.aes = list(size=4)))
 
-Var_Africa <- condVar_tib %>% filter(grepl('Var_Africa', model),
-                                   Date <= as.Date('2019-12-31')) %>%
-  ggplot() + aes(x = Date, y = condVar, color = model) + geom_line() +
-  labs(x = '', y = '') +
-  theme_classic() + 
-  theme(
-    axis.text = element_text(size = 10), 
-    strip.background = element_blank(),
-    strip.text = element_text(size=10),
-    legend.position = 'none') +
-  scale_x_date(breaks = scales::breaks_pretty(10)) +
-  scale_color_manual(values = c("#4682b4",
-                                "#1b98e0",
-                                "#3630ff",
-                                "#085a05",
-                                "#a00909")) +
-  guides(colour = guide_legend(override.aes = list(size=4)))
+
+
 
 Var_Asia <- condVar_tib %>% filter(grepl('Var_Asia', model),
                                    Date <= as.Date('2019-12-31')) %>%
@@ -227,15 +208,15 @@ Var_MidEast <- condVar_tib %>% filter(grepl('Var_MidEast', model),
                                 "#085a05",
                                 "#a00909"))
 
-gridExtra::grid.arrange(Var_Africa, Var_Asia, Var_Europe,
-                        Var_LatAm, Var_MidEast)
+
 
 ###############################################################################
 # conditional variances - plot data for analysis
 ###############################################################################
 
+# LATAM VARIANCE
 condVar_tib %>% filter(grepl('Var_LatAm', model),
-                       Date <= as.Date('2020-01-01'),
+                       Date >= as.Date('2020-01-01'),
                        Date <= as.Date('2020-06-30')) %>%
   ggplot() + aes(x = Date, y = condVar, color = model) + geom_line() +
   labs(x = '', y = 'Conditional Variance') + 

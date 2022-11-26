@@ -1,42 +1,10 @@
-# for testing:
-library(tidyverse)
-library(alabama)
-condDynamics1 <- readRDS('data/conditionalDynamics1.rds')
-Omega <- condDynamics1$condCovar[['2019-01-02']]
-
-data <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'DATA_CLEAN') %>%
-  filter(Date >= as.Date('2018-12-01'),
-         Date <= as.Date('2019-01-01')) %>%
-  select(Africa:'EMBIG Div')
-
-mu <- data %>% select(Africa:'Middle East') %>% colMeans() %>% as.matrix()
-mu_bar <- mu + 0.5
-
-rm(condDynamics1, data)
-
-
 equalWeights <- function(n) {
-  # function to calculate an equal-weighted portfolio
-  # input:
-    # n (dbl): number of assets
-  
-  # output:
-    # w (array): array of equal weights
-  
-  w <- rep(1/n, n) 
-  
+  w <- rep(1/n, n)
   return(w)
 }
 
 
 minimumVarWeights <- function(Omega) {
-  # function to calculate a minimum variance portfolio
-  # input:
-    # Omega (matrix): Positive definite covariance matrix
-  
-  # output:
-  # w (array): array of minimum variance weights
-  
   iota <- rep(1, ncol(Omega))
   Omega_inv <- solve(Omega)
   
@@ -45,53 +13,39 @@ minimumVarWeights <- function(Omega) {
   return(w)
 }
 
-efficientWeights <- function(Omega, mu, mu_bar){
-  # function to calculate the efficient portfolio given return target
-  # input:
-    # Omega  (matrix): Positive definite conditional covariance matrix
-    # mu     (array): Conditionally expected return
-    # mu_bar (array): Return target
-  
-  # output:
-    # w (array): array of efficient weights
 
-  iota <- rep(1,ncol(Omega))         # (N x 1) vector of 1's
-  Omega_inv <- solve(Omega)          # Omega inverse
-  w_mvp <- minimumVarWeights(Omega)  # minimum variance portfolio
+tangentWeights <- function(Omega, mu, gamma = 4){
+  iota <- rep(1, ncol(Omega))
+  Omega_inv <- solve(Omega)
+  w_init <- (Omega_inv %*% iota) / sum(Omega_inv %*% iota)
+  w_tan <- w_init + 1 / gamma * (Omega_inv - w_init %*% t(iota) %*% Omega_inv) %*% mu
   
-  C <- as.numeric(t(iota) %*% Omega_inv %*% iota)
-  D <- as.numeric(t(iota) %*% Omega_inv %*% mu)
-  E <- as.numeric(t(mu)   %*% Omega_inv %*% mu)
-  
-  lambda <- as.numeric(2*(mu_bar-D/C)/(E-(D^2)/C))
-  
-  w_eff <- w_mvp + lambda/2 * (Omega_inv %*% mu - ((D/C) * Omega_inv %*% iota)) 
-  w <- w_eff/sum(w_eff)  
-  
-  return(as.vector(w))
+  return(as.vector(w_tan))
 }
 
 
-efficientWeights_costOpt <- function(Omega, mu, gamma = 2, w_init, beta = 5) {
-  # function to calculate the efficient portfolio given return target
-  # input:
-    # Omega  (matrix): Positive definite conditional covariance matrix
-    # mu     (array): Conditionally expected return
-    # gamma  (dbl): Risk aversion coefficient
-    # w_init (array): Weights before rebalancing
-    # beta   (dbl): Transaction cost parameter (basis points)
+
+
+
+
+tangentNTCWeights <- function(Omega, mu, gamma = 4, beta = 50) {
+  iota <- rep(1, ncol(Omega))
+  Omega_inv <- solve(Omega)
+  w_init <- (Omega_inv %*% iota) / sum(Omega_inv %*% iota)    # MVP
   
-  # output:
-    # w (array): array of optimal weight allocation
+  #w_init <- rep(1 / ncol(Omega), ncol(Omega))                # Equal weights
   
   objective <- function(w) {
-    -t(w) %*% mu + gamma / 2 * t(w) %*% Omega %*% w + beta / 2 * t(w - w_init) %*% (w - w_init)
+    -t(w) %*% mu + gamma / 2 * t(w) %*% Omega %*% w +
+      (beta / 10000) / 2 * t(w - w_init) %*% (w - w_init)
   }
   
   w_optimal <- constrOptim.nl(
     par = w_init,
     fn = objective,
-    heq = function(w) sum(w) - 1,
+    heq = function(w) {
+      sum(w) - 1
+    },
     control.outer = list(trace = FALSE)
   )
   

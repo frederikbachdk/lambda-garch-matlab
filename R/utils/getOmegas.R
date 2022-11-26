@@ -41,11 +41,10 @@ row_end <- which(data$Date == as.Date(estimation_end))
 #############################################################################
 
 # from matlab optimizer
-theta <- readxl::read_excel('MATLAB/estimates/theta1.xlsx',
+theta <- readxl::read_excel('MATLAB/estimates/theta1_constant.xlsx',
                             col_names = FALSE) %>%
   as.matrix()
 
-#Lambda <- readxl::read_excel("data/condEigenvalues.xlsx") %>% as.matrix()
 L <- EigenARCH_loglikelihood(theta)
 loglik <- EigenARCH_loglikelihood_cont(x, theta, n)
 Lambda <- loglik$lambda %>% t()
@@ -57,6 +56,7 @@ V <- parameters$eigenvectors
 W <- parameters$omega
 A <- parameters$alpha
 B <- parameters$beta
+mu <- parameters$mu
 
 #############################################################################
 ### create dataframes of conditional eigenvalues and covariance matrices ###

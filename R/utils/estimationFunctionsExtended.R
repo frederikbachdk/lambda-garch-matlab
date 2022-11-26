@@ -35,6 +35,7 @@ EigenARCH_loglikelihood_cont <- function(X, param, n, p){
   alpha = parameter_list$alpha %>% as.matrix()
   beta = parameter_list$beta %>% as.matrix()
   psi = parameter_list$psi %>% as.matrix()
+  mu = parameter_list$mu %>% as.matrix()
   
   # Rotated returns  
   y <- t(V) %*% x
@@ -48,13 +49,13 @@ EigenARCH_loglikelihood_cont <- function(X, param, n, p){
   for(i in 2:N){ 
     
     # conditional eigenvalues
-    lambda[,i] = omega+alpha%*%y[,i-1]^2 + beta%*%lambda[,i-1] + psi%*%z[i-1]^2      
+    lambda[,i] = omega+alpha%*%(t(V)%*%x[,i-1])^2 + beta%*%lambda[,i-1] + psi%*%z[i-1]^2      
     
     # conditional covariance matrix
     sigma2[[i]] = V %*% diag(lambda[,i]) %*% t(V) # based on the spectral decomposition
     
     # log-likelihood contribution
-    loglike[i] = -p/2*log(2*pi) - 1/2*sum(log(lambda[,i])) - 1/2*t(y[,i]) %*% diag(1/lambda[,i]) %*% y[,i];
+    loglike[i] = -p/2*log(2*pi) - 1/2*sum(log(lambda[,i])) - 1/2*t(t(V)%*%(x[,i]-mu)) %*% diag(1/lambda[,i]) %*% (t(V)%*%(x[,i]-mu))
   }
   
   log_likelihood <- list(loglike = loglike, 
@@ -63,6 +64,7 @@ EigenARCH_loglikelihood_cont <- function(X, param, n, p){
   
   return(log_likelihood)
 }
+
 
 EigenARCH_repar <- function(p, n, param){
 # Function to reparameterize the parameter-vector to the matrices
@@ -74,10 +76,14 @@ EigenARCH_repar <- function(p, n, param){
   phi <- exp(phi)/(1+exp(phi)) * pi/2 
   count <- count+p*(p-1)/2
   V   <- rotation(phi,p) # Rotation matrix
-
-  # Constant
+  
+  # Constant W
   omega <- exp(param[count:(count+p-1)])
   count <- count+p
+  
+  # C matrix
+  psi <- exp(param[count:(count+p-1)])
+  count <- count + p
   
   # Reduced rank matrices
   a <- matrix(param[count:(count+p*n-1)]^2, ncol=n, byrow = TRUE)
@@ -95,16 +101,14 @@ EigenARCH_repar <- function(p, n, param){
   b <- matrix(param[count:(count+p*n-1)]^2,ncol=n,nrow=p, byrow = TRUE);
   count <- count+p*n;
   
-  psi = exp(param[count:(count+p-1)])
-  
-  alpha <- g %*% t(a); 
-  beta  <- g %*% t(b); 
+  mu = param[count:(count+p-1)]
   
   repar <- list(eigenvectors = V, 
                 omega = omega, 
-                alpha = alpha, 
-                beta = beta,
-                psi = psi)
+                alpha = a, 
+                beta = b,
+                psi = psi,
+                mu = mu)
   
   return(repar)
 }

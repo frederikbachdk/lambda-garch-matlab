@@ -22,7 +22,7 @@ estimation_end <- as.Date('2018-12-31')
 #############################################################################
 ### load data ###
 #############################################################################
-# choose covariate number [10=bcom, 15=oil, 17=10yr, 18=usd]
+# choose covariate number [10=bcom, 16=oil, 17=10yr, 18=usd]
 covar <- 18
 p <- n <- 5
 
@@ -54,7 +54,7 @@ row_end <- which(data$Date == as.Date(estimation_end))
 #############################################################################
 
 # from matlab optimizer
-theta <- readxl::read_excel('MATLAB/estimates/theta5_constant.xlsx',
+theta <- readxl::read_excel('MATLAB/estimates/theta5.xlsx',
                             col_names = FALSE) %>%
   as.matrix()
 
@@ -71,7 +71,6 @@ W <- parameters$omega
 A <- parameters$alpha
 B <- parameters$beta
 C <- parameters$psi
-mu <- parameters$mu
 
 #############################################################################
 ### create dataframes of conditional eigenvalues and covariance matrices ###

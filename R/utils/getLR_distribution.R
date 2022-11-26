@@ -11,17 +11,17 @@ cat('\014')
 rm(list=ls())
 
 # import functins
-source('R/utils/simulationFunctions.R')
+source('R/utils/simulationFunctions_2.R')
 
-# define the "true" DGP and calculate the log-likelihood
 set.seed(2022)
-
 N <- 1000 # number of simulations
 
 simulations <- tibble(
   sim = seq(1,N),
   LR  = rep(0, N)
 )
+
+theta0 <- c(1.00) # theta0
 
 for(n in (1:N)){
   
@@ -30,25 +30,32 @@ for(n in (1:N)){
   
   print(paste0('Series ', n, ' out of ', N))
   
-  # simulate ARCH and maximize log likelihood function
-  ARCH1_sim <- ARCH1(T = 2000, x0 = 0, omega = 1, alpha = c(0.5,0))
-  y <- ARCH1_sim$x
+  # simulate ARCH(0) and maximize log likelihood function
+  ARCH_sim <- ARCH(T = 1000, x0 = 0, theta = theta0)
+  y <- ARCH_sim$x
   
-  # calculate MLE for unrestricted theta
-  solution <- optim(par = c(1,0.5,0.01),
-                    fn = negative_loglik,method = "L-BFGS-B",
-                    lower = c(0,1e-10,1e-10),
+  # calculate unrestricted log-likelihood for ARCH(1) process
+  solution_unres <- optim(par = c(1/3, 1/10),
+                        fn = ARCH1_negative_loglik,
+                        method = "L-BFGS-B",
+                        lower = c(1e-16,0),
+                        hessian = TRUE) 
+  
+  loglik_unres <- -solution_unres$value
+  
+  # calculate MLE for restricted theta (H0: alpha1=0)
+  solution_res <- optim(par = c(1/3),
+                    fn = ARCH0_negative_loglik,
+                    method = "L-BFGS-B",
+                    lower = c(1e-16),
+                    upper = c(Inf),
                     hessian = TRUE) 
   
-  # calculate MLE for restricted theta
-  loglik_unr <- -solution$value
-  
-  loglik_res <- ARCH1_loglikelihood(theta = c(solution$par[1],solution$par[2],0), y)
+  loglik_res <- -solution_res$value
   
   # calculate LR statistic for alpha = 0
-  simulations$LR[n] <- -2*(loglik_res - loglik_unr)
+  simulations$LR[n] <- -2*(loglik_res - loglik_unres)
   }
 
-epdfPlot(simulations$LR)
-quantile(simulations$LR, 0.95)
-
+epdfPlot(simulations$LR)       # plot empirical density
+quantile(simulations$LR, 0.95) # find empirical 95% quantile

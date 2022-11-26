@@ -1,14 +1,13 @@
 ARCH <- function(T, x0, theta){
   
-  # THIS FUNCTION SIMULATES A STANDARD ARCH(p) PROCESS
+  # THIS FUNCTION SIMULATES A STANDARD ARCH(1) PROCESS
     
     # INPUT: 
       ## T: Number of observations
       ## x0: Initial value
-      ## theta: Parameter vector
+      ## theta: Parameter vector (omega, alpha1)
     # OUTPUT:
       ## ARCH: Time series vector of length T
-  
   p <- length(theta) - 1
   omega <- theta[1]
   alpha1 <- theta[2]
@@ -76,78 +75,49 @@ ARCH <- function(T, x0, theta){
   return(ARCH)
 }
 
-ARCH_loglikelihood <- function(theta, y){
+ARCH1_loglikelihood <- function(theta, y){
   
   p <- length(theta) - 1
   omega <- theta[1]
   alpha1 <- theta[2]
-  alpha2 <- theta[3]
-  alpha3 <- theta[4]
-  alpha4 <- theta[5]
-  alpha5 <- theta[6]
   
   N <- length(y) # Number of observations
   logLik <- 0    # Initialize value of log-likelihood
   
   # Evaluate likelihood contributions at parameter values
-  if(p == 0){
-    for (n in 2:N) {
-      s <- omega 
-      logLik <- logLik - log(s) - y[n]^2 / s
-    }
-  } else if(p == 1){
-    for (n in 3:N) {
+  for (n in 2:N) {
       s <- omega + 
         alpha1 * y[n-1]^2
       
       logLik <- logLik - log(s) - y[n]^2 / s
     }
-  } else if(p == 2){
-      for (n in 3:N) {
-        s <- omega + 
-          alpha1 * y[n-1]^2 + 
-          alpha2 * y[n-2]^2
-        
-        logLik <- logLik - log(s) - y[n]^2 / s
-      }
-  } else if(p == 3){
-      for (n in 4:N) {
-        s <- omega + 
-          alpha1 * y[n-1]^2 + 
-          alpha2 * y[n-2]^2 +
-          alpha3 * y[n-3]^2
-        # sigma_t^2
-        logLik <- logLik - log(s) - y[n]^2 / s # Cumulative sum
-      }
-  } else if(p == 4){
-      for (n in 5:N) {
-        s <- omega + 
-          alpha1 * y[n-1]^2 + 
-          alpha2 * y[n-2]^2 +
-          alpha3 * y[n-3]^2 +
-          alpha4 * y[n-4]^2
-        
-        logLik <- logLik - log(s) - y[n]^2 / s 
-      }
-  } else if(p == 5){
-      for (n in 6:N) {
-        s <- omega + 
-          alpha1 * y[n-1]^2 + 
-          alpha2 * y[n-2]^2 +
-          alpha3 * y[n-3]^2 +
-          alpha4 * y[n-4]^2 +
-          alpha5 * y[n-5]^2
-        
-        logLik <- logLik - log(s) - y[n]^2 / s 
-    }
-  }
   
   # Scaling
   return(0.5 * logLik)
 
 }
 
-negative_loglik <- function(x) -ARCH_loglikelihood(theta=x, y = y)
+ARCH1_negative_loglik <- function(x) -ARCH1_loglikelihood(theta=x, y = y)
 
 
+ARCH0_loglikelihood <- function(theta, y){
+  
+  p <- length(theta) - 1
+  omega <- theta[1]
+  
+  N <- length(y) # Number of observations
+  logLik <- 0    # Initialize value of log-likelihood
+  
+  # Evaluate likelihood contributions at parameter values
+  for (n in 1:N) {
+    s <- omega
+    logLik <- logLik - log(s) - y[n]^2 / s
+  }
+  
+  # Scaling
+  return(0.5 * logLik)
+  
+}
+
+ARCH0_negative_loglik <- function(x) -ARCH0_loglikelihood(theta=x, y = y)
 

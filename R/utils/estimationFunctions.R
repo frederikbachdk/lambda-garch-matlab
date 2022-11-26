@@ -31,6 +31,7 @@ EigenARCH_loglikelihood_cont <- function(x, param, n){
   omega = parameter_list$omega %>% as.matrix()
   alpha = parameter_list$alpha %>% as.matrix()
   beta = parameter_list$beta %>% as.matrix()
+  mu = parameter_list$mu %>% as.matrix()
   
   # Rotated returns  
   y <- t(V) %*% x
@@ -44,13 +45,13 @@ EigenARCH_loglikelihood_cont <- function(x, param, n){
   for(i in 2:N){ 
     
     # conditional eigenvalues
-    lambda[,i] = omega+alpha%*%y[,i-1]^2 + beta%*%lambda[,i-1]            
+    lambda[,i] = omega+alpha%*%(t(V)%*%x[,i-1])^2 + beta%*%lambda[,i-1]            
     
     # conditional covariance matrix
     sigma2[[i]] = V %*% diag(lambda[,i]) %*% t(V) # based on the spectral decomposition
     
     # log-likelihood contribution
-    loglike[i] = -p/2*log(2*pi) - 1/2*sum(log(lambda[,i])) - 1/2*t(y[,i]) %*% diag(1/lambda[,i]) %*% y[,i];
+    loglike[i] = -p/2*log(2*pi) - 1/2*sum(log(lambda[,i])) - 1/2*t(t(V)%*%(x[,i]-mu)) %*% diag(1/lambda[,i]) %*% (t(V)%*%(x[,i]-mu))
   }
   
   #persistence = max(eigen(alpha+beta)$values); # persistence of stochastic process
@@ -94,13 +95,13 @@ EigenARCH_repar <- function(p, n, param){
   b <- matrix(param[count:(count+p*n-1)]^2,ncol=n,nrow=p, byrow = TRUE);
   count <- count+p*n;
   
-  alpha <- g %*% t(a); 
-  beta  <- g %*% t(b); 
+  mu <- param[count:(count+p-1)]
   
   repar <- list(eigenvectors = V, 
                 omega = omega, 
-                alpha = alpha, 
-                beta = beta)
+                alpha = a, 
+                beta = b,
+                mu = mu)
   
   return(repar)
 }

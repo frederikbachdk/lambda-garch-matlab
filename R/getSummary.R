@@ -1,5 +1,4 @@
 source('R/utils/plotsFunctions.R')
-source('R/utils/estimationFunctions.R')
 
 ### IMPORT DATA ###
 data <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'DATA_CLEAN') %>% 
@@ -13,7 +12,7 @@ weights <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'WEIGHTS_CLEAN'
   filter(Date >= '2010-01-01') %>%
   mutate(Date = as.Date(Date))
 
-data_etf <- readxl::read_excel('data/01112022_ETF.xlsx', sheet = 'PRICES') %>% 
+data_etf <- data <- readxl::read_excel('data/01112022_ETF.xlsx', sheet = 'PRICES') %>% 
   mutate(Date = as.Date(Date)) 
 
 ### PIVOT DATA  ###
@@ -307,9 +306,9 @@ data_viz_region %>%
                     Sharpe = ~sqrt(250)*mean(.)/sd(.))) %>%
   arrange(Region)
 
-data %>% filter(Date <= as.Date('2018-12-31')) %>%
+data %>% filter(Date <= as.Date('2021-12-31')) %>% 
   select(Africa, Asia, Europe, 'Latin America', 'Middle East') %>%
-  colMeans() %>% round(4)
+  describe()
   
 describe(data %>% select(Africa, Asia, Europe, 'Latin America', 'Middle East'))
 
@@ -403,8 +402,8 @@ covariates$Date[2550] # Date 2020-03-17
 # eigenvalue plots
 ###############################################################################
 
-condDynamics1 <- readRDS('data/conditionalDynamics1.rds')
-condEigenvals <- condDynamics1$condEig
+condDynamics5 <- readRDS('data/conditionalDynamics5.rds')
+condEigenvals <- condDynamics5$condEig
 
 # create normalized eigenvalues
 condEigenvals_norm <- condEigenvals %>% 
@@ -751,11 +750,7 @@ grid.arrange(b11, b12, b21, b22, nrow=2)
 ###############################################################################
 # rotated returns
 ###############################################################################
-theta <- readxl::read_excel('MATLAB/estimates/theta1_constant.xlsx',
-                            col_names = FALSE) %>%
-  as.matrix()
-parameters <- EigenARCH_repar(p = 5, n = 5, theta)
-V <- parameters$eigenvectors
+
 rotation <- data %>% select(Date:'Middle East')
 rot_mat <- as.matrix(rotation[,2:6])
 rot_return <- matrix(NA, nrow = 3123, ncol = 5)
@@ -828,110 +823,3 @@ data_etf %>% clean_names() %>%
 
 ggsave('embig_vs_etf.png', dpi = 'retina',
        path = 'plots/')
-
-###############################################################################
-# Africa ETF vs EMBIG
-###############################################################################
-
-# Density plots for residuals
-residual1 <- readxl::read_excel('data/residuals_model2.xlsx', col_names = FALSE)
-colnames(residual1) <- c('Africa', 'Asia', 'Europe','Latin America', 'Middle East')
-
-dens_model1_africa <- residual1 %>% select(Africa) %>%
-  ggplot() + aes(x = Africa) + 
-  geom_histogram(aes(y =..density..),
-                 colour = "black", 
-                 fill = "white",
-                 bins = 100) +
-  stat_function(fun = dnorm, 
-                args = list(mean = mean(residual1$Africa), 
-                            sd = sd(residual1$Africa))) +
-  ggtitle('Panel A: Africa') + 
-  xlim(-4,4) +
-  labs(y = 'Density', x = '') + 
-  theme_classic() +
-  theme(
-    axis.text = element_text(size = 14), 
-    strip.background = element_blank(),
-    strip.text = element_text(size=14),
-    plot.title = element_text(hjust = 0.5, size = 14))
-
-dens_model1_asia <- residual1 %>% select(Asia) %>%
-  ggplot() + aes(x = Asia) + 
-  geom_histogram(aes(y =..density..),
-                 colour = "black", 
-                 fill = "white",
-                 bins = 100) +
-  stat_function(fun = dnorm, 
-                args = list(mean = mean(residual1$Asia), 
-                            sd = sd(residual1$Asia))) +
-  ggtitle('Panel B: Asia') + 
-  xlim(-4,4) +
-  labs(y = 'Density', x = '') + 
-  theme_classic() +
-  theme(
-    axis.text = element_text(size = 14), 
-    strip.background = element_blank(),
-    strip.text = element_text(size=14),
-    plot.title = element_text(hjust = 0.5, size = 14))
-
-dens_model1_europe <- residual1 %>% select(Europe) %>%
-  ggplot() + aes(x = Europe) + 
-  geom_histogram(aes(y =..density..),
-                 colour = "black", 
-                 fill = "white",
-                 bins = 100) +
-  stat_function(fun = dnorm, 
-                args = list(mean = mean(residual1$Europe), 
-                            sd = sd(residual1$Europe))) +
-  ggtitle('Panel C: Europe') + 
-  labs(y = 'Density', x = '') + 
-  xlim(-4,4) +
-  theme_classic() +
-  theme(
-    axis.text = element_text(size = 14), 
-    strip.background = element_blank(),
-    strip.text = element_text(size=14),
-    plot.title = element_text(hjust = 0.5, size = 14))
-
-dens_model1_latam <- residual1 %>% select(`Latin America`) %>%
-  ggplot() + aes(x = `Latin America`) + 
-  geom_histogram(aes(y =..density..),
-                 colour = "black", 
-                 fill = "white",
-                 bins = 100) +
-  stat_function(fun = dnorm, 
-                args = list(mean = mean(residual1$`Latin America`), 
-                            sd = sd(residual1$`Latin America`))) +
-  ggtitle('Panel D: Latin America') + 
-  labs(y = 'Density', x = '') + 
-  xlim(-4,4) +
-  theme_classic() +
-  theme(
-    axis.text = element_text(size = 14), 
-    strip.background = element_blank(),
-    strip.text = element_text(size=14),
-    plot.title = element_text(hjust = 0.5, size = 14))
-
-dens_model1_mideast <- residual1 %>% select(`Middle East`) %>%
-  ggplot() + aes(x = `Middle East`) + 
-  geom_histogram(aes(y =..density..),
-                 colour = "black", 
-                 fill = "white",
-                 bins = 100) +
-  stat_function(fun = dnorm, 
-                args = list(mean = mean(residual1$`Middle East`), 
-                            sd = sd(residual1$`Middle East`))) +
-  ggtitle('Panel E: Middle East') + 
-  labs(y = 'Density', x = '') + 
-  xlim(-4,4) +
-  theme_classic() +
-  theme(
-    axis.text = element_text(size = 14), 
-    strip.background = element_blank(),
-    strip.text = element_text(size=14),
-    plot.title = element_text(hjust = 0.5, size = 14))
-
-grid.arrange(dens_model1_africa, dens_model1_asia, 
-             dens_model1_europe, dens_model1_latam,
-             dens_model1_mideast)

@@ -1,17 +1,26 @@
+source('r/utils/getWeights.R')
+library(tidyverse)
+library(lubridate)
+
 ## THIS FUNCTION CALCULATES OPTIMAL PORTFOLIO WEIGHTS AND RETURNS
-getPortfolios <- function(df, 
-                          model = 1, 
+getPortfolios <- function(model = 1,
                           trading_start = '2019-01-02', 
                           trading_end = '2022-06-30'){
   
   #############################################################################
   ### Define the dataframes to roll over ###
   #############################################################################
+  df <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'DATA_CLEAN') %>% 
+    mutate(Date = as.Date(Date)) %>%
+    mutate_at(vars(-Date), ~./100)
   
   # define path based on model selection and read in the file
   path_conditionalDynamics <- paste0('data/conditionalDynamics',model,'.rds')
-  condDynamics <- readRDS(file = "data/conditionalDynamics1.rds")
+  path_params <- paste0('MATLAB/estimates/theta',model,'_constant.xlsx')
+  condDynamics <- readRDS(path_conditionalDynamics)
   condCovariances <- condDynamics$condCovar
+  mu <- readxl::read_excel(path_params, col_names = FALSE) %>% tail(5) %>%
+    deframe()
   
   # split data into regions and index returns
   data <- df %>% 
@@ -52,87 +61,85 @@ getPortfolios <- function(df,
   trading <- list(
     "EW" = trading,
     "MVP" = trading,
-    "TAN" = trading,
-    "NTC" = trading
+    "EFF" = trading,
+    "EFF_TC" = trading
   )
   
+  # initialize moments
+  Omega_init <- condCovariances[[trading_start]]
   
-  # initialize portfolio weights
-  Omega_int <- condCovariances[[trading_start]]
-  mu <- rep(as.matrix(benchmark[1,2]/100), 5)
+  mu_init <- mu
   
+  # initialize portfolios (note: no cost to buy the first portfolio => beta = 0)
   trading$EW[1,1:5]  <- equalWeights(n = 5)
-  trading$MVP[1,1:5] <- minimumVarWeights(Omega_int)
-  trading$TAN[1,1:5] <- tangentWeights(Omega_int, mu = mu, gamma = 2)
-  trading$NTC[1,1:5] <- tangentNTCWeights(Omega_int, mu = mu, gamma = 4, beta = 50)
+  trading$MVP[1,1:5] <- minimumVarWeights(Omega_init)
+  trading$EFF[1,1:5] <- efficientWeights_costOpt(Omega_init, mu_init, gamma = 4, w_init = equalWeights(n = 5), beta = 0.00)
+  trading$EFF_TC[1,1:5] <- efficientWeights_costOpt(Omega_init, mu_init, gamma = 4, w_init = equalWeights(n = 5), beta = 0.00)
   
   # initialize portfolio returns
-  trading$EW[1,6]  <- trading$EW[1,1:5] %*% t(as.matrix(x_trading[1,2:6]/100))
-  trading$MVP[1,6] <- trading$MVP[1,1:5] %*% t(as.matrix(x_trading[1,2:6]/100))
-  trading$TAN[1,6] <- trading$TAN[1,1:5] %*% t(as.matrix(x_trading[1,2:6]/100))
-  trading$NTC[1,6] <- trading$NTC[1,1:5] %*% t(as.matrix(x_trading[1,2:6]/100))
+  trading$EW[1,6]  <- trading$EW[1,1:5] %*% t(as.matrix(x_trading[1,2:6]))
+  trading$MVP[1,6] <- trading$MVP[1,1:5] %*% t(as.matrix(x_trading[1,2:6]))
+  trading$EFF[1,6] <- trading$EFF[1,1:5] %*% t(as.matrix(x_trading[1,2:6]))
+  trading$EFF_TC[1,6] <- trading$EFF_TC[1,1:5] %*% t(as.matrix(x_trading[1,2:6]))
   
-  count <- 0
   # generate portfolio weights and returns
   for(t in 2:trading_length){
     
+    # CASE 1: FIRST TRADING DAY OF MONTH => REBALANCE PORTFOLIO
     if(x_trading$rebalance[t] == 1){
-      rebalance_date <- which(data$Date == as.Date(x_trading$Date[t]))
-      Omega_int <- condCovariances[[rebalance_date]]
-      mu <- rep(as.matrix(benchmark[t,2]/100), 5) # required return is the benchmark return
       
-      # rebalance portfolio weights
-      w_ew <- equalWeights(n = 5)
-      w_mvp <- minimumVarWeights(Omega_int)
-      w_tan <- tangentWeights(Omega_int, mu = mu, gamma = 4)
-      w_ntc <- tangentNTCWeights(Omega_int, mu = mu, gamma = 4, beta = 50)
+      rebalance_date <- as.character(x_trading$Date[t])
       
-      # store weights in tibble
-      trading$EW[t,1:5]  <- w_ew
-      trading$MVP[t,1:5] <- w_mvp
-      trading$TAN[t,1:5] <- w_tan
-      trading$NTC[t,1:5] <- w_ntc
+      # DEFINE THE CONDITIONAL DISTRIBUTION
       
-      # portfolio returns
-      trading$EW[t,6]  <- evaluate_performance(w = w_ew, w_previous = trading$EW[t-1,1:5], next_return = x_trading[t,2:6]/100)
-      trading$MVP[t,6] <- evaluate_performance(w = w_mvp, w_previous = trading$MVP[t-1,1:5], next_return = x_trading[t,2:6]/100)
-      trading$TAN[t,6] <- evaluate_performance(w = w_tan, w_previous = trading$TAN[t-1,1:5], next_return = x_trading[t,2:6]/100)
-      trading$NTC[t,6] <- evaluate_performance(w = w_ntc, w_previous = trading$NTC[t-1,1:5], next_return = x_trading[t,2:6]/100)
+      # Omega_t from MGARCH 
+      Omega <- condCovariances[[rebalance_date]]
       
-      count <- count + 1
+      # re-balance portfolio weights (beta = 50 bps)
+      trading$EW[t,1:5]  <- equalWeights(n = 5)
+      trading$MVP[t,1:5] <- minimumVarWeights(Omega)
+      trading$EFF[t,1:5] <- efficientWeights_costOpt(Omega, mu, gamma = 4, w_init = trading$EFF[t-1,1:5], beta = 0.00)
+      trading$EFF_TC[t,1:5] <- efficientWeights_costOpt(Omega, mu, gamma = 4, w_init = trading$EFF_TC[t-1,1:5], beta = 0.5)
+      
+      # portfolio returns (w, w_prev, next_return, beta = 0.05)
+      trading$EW[t,6]  <- evaluate_performance(w = w_ew, w_prev = trading$EW[t-1,1:5], next_return = x_trading[t,2:6], beta = 0.05)
+      trading$MVP[t,6] <- evaluate_performance(w = w_mvp, w_prev = trading$MVP[t-1,1:5], next_return = x_trading[t,2:6], beta = 0.05)
+      trading$EFF[t,6] <- evaluate_performance(w = w_eff, w_prev = trading$EFF[t-1,1:5], next_return = x_trading[t,2:6], beta = 0.05)
+      trading$EFF_TC[t,6] <- evaluate_performance(w = w_eff_tc, w_prev = trading$EFF_TC[t-1,1:5], next_return = x_trading[t,2:6], beta = 0.05)
       
     } else {
       
-      # equal weighted  
-      w_ew <- trading$EW[t-1,1:5] * (1 + x_trading[t-1,2:6]/100)
+      # CASE 2: NOT FIRST TRADING DAY OF MONTH => KEEP PORTFOLIO
+      
+      # 1) equal weighted  
+      w_ew <- trading$EW[t-1,1:5] * (1 + x_trading[t-1,2:6])
       w_ew <- as.numeric(w_ew / sum(as.matrix(w_ew)))
-      return_ew <- w_ew %*% t(as.matrix(x_trading[t-1,2:6]/100))
+      return_ew <- w_ew %*% t(as.matrix(x_trading[t-1,2:6]))
       trading$EW[t,] <- c(w_ew, return_ew)
       
       # minimum variance
-      w_mvp <- trading$MVP[t-1,1:5] * (1 + x_trading[t-1,2:6]/100)
+      w_mvp <- trading$MVP[t-1,1:5] * (1 + x_trading[t-1,2:6])
       w_mvp <- as.numeric(w_mvp / sum(as.matrix(w_mvp)))
-      return_mvp <- w_mvp %*% t(as.matrix(x_trading[t-1,2:6]/100))
+      return_mvp <- w_mvp %*% t(as.matrix(x_trading[t-1,2:6]))
       trading$MVP[t,] <- c(w_mvp, return_mvp)
       
       # efficient tangent
-      w_tan <- trading$TAN[t-1,1:5] * (1 + x_trading[t-1,2:6]/100)
-      w_tan <- as.numeric(w_tan / sum(as.matrix(w_tan)))
-      return_tan <- w_tan %*% t(as.matrix(x_trading[t-1,2:6]/100))
-      trading$TAN[t,] <- c(w_tan, return_tan)
+      w_eff <- trading$EFF[t-1,1:5] * (1 + x_trading[t-1,2:6])
+      w_eff <- as.numeric(w_eff / sum(as.matrix(w_eff)))
+      return_eff <- w_eff %*% t(as.matrix(x_trading[t-1,2:6]))
+      trading$EFF[t,] <- c(w_eff, return_eff)
       
       # efficient tangent net TC
-      w_ntc <- trading$NTC[t-1,1:5] * (1 + x_trading[t-1,2:6]/100)
-      w_ntc <- as.numeric(w_ntc / sum(as.matrix(w_ntc)))
-      return_ntc <- w_ntc %*% t(as.matrix(x_trading[t-1,2:6]/100))
-      trading$NTC[t,] <- c(w_ntc, return_ntc)
+      w_eff_tc <- trading$EFF_TC[t-1,1:5] * (1 + x_trading[t-1,2:6])
+      w_eff_tc <- as.numeric(w_eff_tc / sum(as.matrix(w_eff_tc)))
+      return_eff_ntc <- w_eff_tc %*% t(as.matrix(x_trading[t-1,2:6]))
+      trading$EFF_TC[t,] <- c(w_eff_tc, return_eff_ntc)
       
     }
   }
   
   return(trading)
 }
-
 
 
 

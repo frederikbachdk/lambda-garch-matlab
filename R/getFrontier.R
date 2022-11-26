@@ -1,6 +1,5 @@
 library(tidyverse)
 library(quadprog)
-model <- 5
 
 # import data 
 data <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'DATA_CLEAN') %>% 
@@ -12,13 +11,36 @@ data <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'DATA_CLEAN') %>%
 # define conditional distribution  
 condDynamics5 <- readRDS('data/conditionalDynamics5.rds')
 condVar5 <- condDynamics5$condCovar
-Omega <- condVar5[['2019-01-02']] * 250
+Omega <- condVar5[['2020-01-02']] * 250
 colnames(Omega) <- c('Africa', 'Asia', 'Europe', 'Latin America', 'Middle East')
 
-mu <- readxl::read_excel(paste0('MATLAB/estimates/theta',model,'_constant.xlsx'), 
-                         col_names = FALSE) %>% tail(5) %>% deframe() * 250
+mu <- data %>%
+  select(-Date, -EMBIG) %>% colMeans() %>% as.matrix() * 250
+colnames(mu) <- 'mu'
 
 # calculate optimal weights
+
+# 1) MVP
+w_mvp <-  solve.QP(
+  Dmat = Omega,
+  dvec = rep(0, 5),
+  Amat = cbind(rep(1, 5)),
+  bvec = 1,
+  meq = 1
+)
+
+# 2) Efficient
+w_efficient <- solve.QP(
+  Dmat = 2 * Omega,
+  dvec = mu,
+  Amat = cbind(rep(1, 5)),
+  bvec = 1,
+  meq = 1
+)
+
+
+
+
 compute_efficient_frontier <- function(Omega,mu){
   
   # Compute the minimum variance portfolio weights 
