@@ -12,7 +12,7 @@ weights <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'WEIGHTS_CLEAN'
   filter(Date >= '2010-01-01') %>%
   mutate(Date = as.Date(Date))
 
-data_etf <- data <- readxl::read_excel('data/01112022_ETF.xlsx', sheet = 'PRICES') %>% 
+data_etf <- readxl::read_excel('data/01112022_ETF.xlsx', sheet = 'PRICES') %>% 
   mutate(Date = as.Date(Date)) 
 
 ### PIVOT DATA  ###
@@ -93,20 +93,22 @@ weight_viz <- weights %>%
 
 # Figure 3) Weight line plots for regions
 weight_viz %>%
-  ggplot() + aes(x = Date, y = Weight, color = Region) + geom_line() +
-  scale_color_manual(values = c("#4682b4",
-                                "#1b98e0",
+  ggplot() + aes(x = Date, y = Weight, color = Region) + geom_line(size = 0.7) +
+  scale_color_manual(values = c("tomato",
+                                "steelblue",
                                 "#3630ff",
                                 "#085a05",
-                                "#a00909")) +
-  theme(
-    axis.text = element_text(size = 10), 
-    strip.background = element_blank(),
-    strip.text = element_text(size=10)) + 
+                                "#a00909")) + 
   scale_x_date(breaks = scales::breaks_pretty(10)) +
   ylim(0,50) +
   labs(y = 'Weight (%)', x = '') +
-  theme_classic()
+  theme_classic() +
+  theme(
+    axis.text = element_text(size = 12),
+    strip.background = element_blank(),
+    strip.text = element_text(size=12),
+    legend.position = 'bottom',
+    legend.text = element_text(size=12)) 
 
 ggsave('regional_weights.png', dpi = 'retina',
        path = 'plots/')
@@ -337,24 +339,24 @@ commodity <- data %>% select(Date, bbg_commodity_index) %>%
   ylim(-2.5, 2.5) +
   theme_classic() +
   theme(
-    axis.text = element_text(size = 18),
+    axis.text = element_text(size = 14),
     strip.background = element_blank(),
-    strip.text = element_text(size=18),
+    strip.text = element_text(size = 14),
     legend.position = "none",
-    plot.title = element_text(hjust = 0.5, size = 18)) +
+    plot.title = element_text(hjust = 0.5, size = 14)) +
   scale_x_date(breaks = scales::breaks_pretty(10)) 
 
-wti <- data %>% select(Date, wti_crude_oil) %>%
-  ggplot() + geom_line(mapping = aes(x = Date, y = wti_crude_oil), color = 'steelblue') +
-  ggtitle('WTI Crude Oil Index') +
+brent <- data %>% select(Date, brent_crude_oil) %>%
+  ggplot() + geom_line(mapping = aes(x = Date, y = brent_crude_oil), color = 'steelblue') +
+  ggtitle('Brent Crude Oil Index') +
   labs(x = '', y = "Log change (%)") +
   theme_classic() +
   theme(
-    axis.text = element_text(size = 18),
+    axis.text = element_text(size = 14),
     strip.background = element_blank(),
-    strip.text = element_text(size=18),
+    strip.text = element_text(size = 14),
     legend.position = "none",
-    plot.title = element_text(hjust = 0.5, size = 18)) +
+    plot.title = element_text(hjust = 0.5, size = 14)) +
   scale_x_date(breaks = scales::breaks_pretty(10)) 
 
 treasury <- data %>% select(Date, us_10_yr_yield) %>%
@@ -363,11 +365,11 @@ treasury <- data %>% select(Date, us_10_yr_yield) %>%
   labs(x = '', y = "Log change (%)") +
   theme_classic() +
   theme(
-    axis.text = element_text(size = 18),
+    axis.text = element_text(size = 14),
     strip.background = element_blank(),
-    strip.text = element_text(size=18),
+    strip.text = element_text(size = 14),
     legend.position = "none",
-    plot.title = element_text(hjust = 0.5, size = 18)) +
+    plot.title = element_text(hjust = 0.5, size = 14)) +
   scale_x_date(breaks = scales::breaks_pretty(10)) 
 
 dollar <- data %>% select(Date, dollar_strength_index) %>%
@@ -377,15 +379,14 @@ dollar <- data %>% select(Date, dollar_strength_index) %>%
   ylim(-2.5, 2.5) +
   theme_classic() +
   theme(
-    axis.text = element_text(size = 18),
+    axis.text = element_text(size = 14),
     strip.background = element_blank(),
-    strip.text = element_text(size=18),
+    strip.text = element_text(size=14),
     legend.position = "none",
-    plot.title = element_text(hjust = 0.5, size = 18)) +
+    plot.title = element_text(hjust = 0.5, size = 14)) +
   scale_x_date(breaks = scales::breaks_pretty(10))
 
-grid.arrange(commodity, wti, treasury, dollar, nrow=2)
-#ggsave('covariates.png', dpi = 'retina', path = 'plots/')
+grid.arrange(commodity, brent, treasury, dollar, nrow=2)
 
 # min and max values
 covariates %>%
@@ -402,8 +403,8 @@ covariates$Date[2550] # Date 2020-03-17
 # eigenvalue plots
 ###############################################################################
 
-condDynamics5 <- readRDS('data/conditionalDynamics5.rds')
-condEigenvals <- condDynamics5$condEig
+condDynamics <- readRDS('data/conditionalDynamics5.rds')
+condEigenvals <- condDynamics$condEig
 
 # create normalized eigenvalues
 condEigenvals_norm <- condEigenvals %>% 
@@ -424,49 +425,51 @@ eigplot1 <- condEigenvals_long %>%
   ggplot() + aes(x = Date, y = Value, color = Eigenvalue) + geom_line() +
   labs(x = '', y = 'Eigenvalue') + 
   theme_classic() + 
-  theme(
-    axis.text = element_text(size = 14), 
-    strip.background = element_blank(),
-    strip.text = element_text(size=14),
-    legend.position = 'bottom',
-    legend.text=element_text(size=14)) + 
   scale_x_date(breaks = scales::breaks_pretty(10)) +
-  scale_color_manual(values = c("#4682b4",
-                                  "#1b98e0",
-                                  "#3630ff",
-                                  "#085a05",
-                                  "#a00909"),
+  scale_color_manual(values = c('black',
+                                'cadetblue',
+                                'blue',
+                                "darkgreen",
+                                "#a00909"),
                      labels = unname(TeX(c("$\\hat{\\lambda}_{1,t}$", 
                                              "$\\hat{\\lambda}_{2,t}$",
                                              "$\\hat{\\lambda}_{3,t}$",
                                              "$\\hat{\\lambda}_{4,t}$",
                                              "$\\hat{\\lambda}_{5,t}$"))),
                      name = '') +
-  guides(colour = guide_legend(override.aes = list(size=4)))
+  guides(colour = guide_legend(override.aes = list(size=4))) +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 14), 
+    strip.background = element_blank(),
+    strip.text = element_text(size=14),
+    legend.position = 'bottom',
+    legend.text=element_text(size=14))
   
 eigplot2 <- condEigenvals_norm %>%
   ggplot() + aes(x = Date, y = Value, color = Eigenvalue) + geom_line() +
   labs(x = '', y = 'Proportion of Variance') + 
   theme_classic() + 
+  scale_color_manual(values = c('black',
+                                  'cadetblue',
+                                  'blue',
+                                  "darkgreen",
+                                  "#a00909"),
+                     labels = unname(TeX(c("$\\hat{\\lambda}_{1,t}/\\sum_{i=1}^5\\hat{\\lambda}_{i,t}$", 
+                                           "$\\hat{\\lambda}_{2,t}/\\sum_{i=1}^5\\hat{\\lambda}_{i,t}$",
+                                           "$\\hat{\\lambda}_{3,t}/\\sum_{i=1}^5\\hat{\\lambda}_{i,t}$",
+                                           "$\\hat{\\lambda}_{4,t}/\\sum_{i=1}^5\\hat{\\lambda}_{i,t}$",
+                                           "$\\hat{\\lambda}_{5,t}/\\sum_{i=1}^5\\hat{\\lambda}_{i,t}$"))),
+                     name = '') +
+  guides(colour = guide_legend(override.aes = list(size=4))) +
   theme(
+    axis.title = element_text(size = 14),
     axis.text = element_text(size = 14), 
     strip.background = element_blank(),
     strip.text = element_text(size=14),
     legend.position = 'bottom',
     legend.text=element_text(size=14)) + 
-  scale_x_date(breaks = scales::breaks_pretty(10)) + 
-  scale_color_manual(values = c("#4682b4",
-                                  "#1b98e0",
-                                  "#3630ff",
-                                  "#085a05",
-                                  "#a00909"),
-                     labels = unname(TeX(c("$\\hat{\\lambda}_{1,t}/\\sum_i\\hat{\\lambda}_{i,t}$", 
-                                           "$\\hat{\\lambda}_{2,t}/\\sum_i\\hat{\\lambda}_{i,t}$",
-                                           "$\\hat{\\lambda}_{3,t}/\\sum_i\\hat{\\lambda}_{i,t}$",
-                                           "$\\hat{\\lambda}_{4,t}/\\sum_i\\hat{\\lambda}_{i,t}$",
-                                           "$\\hat{\\lambda}_{5,t}/\\sum_i\\hat{\\lambda}_{i,t}$"))),
-                     name = '') +
-  guides(colour = guide_legend(override.aes = list(size=4)))
+  scale_x_date(breaks = scales::breaks_pretty(10))
 
 grid.arrange(eigplot1, eigplot2)
 
@@ -803,23 +806,30 @@ ggsave('rotated_returns.png', dpi = 'retina',
 ###############################################################################
 # Africa ETF vs EMBIG
 ###############################################################################
-scale = 15
-
-data_etf %>% clean_names() %>%
-  ggplot() + aes(x = date, y = spfiglad_index) +
-  geom_line(aes(color = "S&P Africa Index")) +
-  geom_line(aes(y = jpgcafri_index/scale,
-                color = "J.P. Morgan EMBIG Africa Index"))+
-  scale_x_continuous(breaks = seq(0, 336, 24)) +
-  scale_y_continuous(sec.axis = sec_axis(~.*scale, name="EMBIG Africa Index Price")) +
-  labs(x = "", y = "S&P Africa Index Price", color = "") +
-  scale_color_manual(values = c("orange2", "gray50")) +
+data_etf %>% clean_names() %>% select(date, 
+                                      spfiglad_index_indexed, 
+                                      jpgcafri_index_indexed) %>%
+  pivot_longer(cols=spfiglad_index_indexed:jpgcafri_index_indexed,
+               values_to = 'price',
+               names_to = 'index') %>%
+  ggplot() + 
+  geom_line(aes(x = date, y = price, color = index)) + 
+  scale_color_manual(values = c('tomato',
+                                "steelblue"),
+                     labels = c('S&P Africa Index','EMBIG Diversified Africa Index'),
+                     name = 'Index') +
+  labs(x = "", y = "Index, 30-06-2014 = 100") +
   theme_classic() +
   theme(
-    axis.text = element_text(size = 10), 
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 14),
     strip.background = element_blank(),
-    strip.text = element_text(size=10),
-    legend.position = 'bottom') 
-
-ggsave('embig_vs_etf.png', dpi = 'retina',
-       path = 'plots/')
+    strip.text = element_text(size=14),
+    legend.text = element_text(size=14),
+    legend.title = element_text(size=14),
+    legend.position = 'bottom') + 
+  scale_x_date(breaks = scales::breaks_pretty(12))
+  
+  
+  
+  

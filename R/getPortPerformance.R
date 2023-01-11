@@ -18,12 +18,21 @@ benchmark <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'DATA_CLEAN')
          Date <= as.Date('2022-06-30')) %>%
   select(Date, EMBIG = 'EMBIG Div')
 
+# import data (alternative trading sample)
+benchmark <- readxl::read_excel('data/13102022_data.xlsx', sheet = 'DATA_CLEAN') %>% 
+  mutate(Date = as.Date(Date)) %>%
+  filter(Date >= as.Date('2015-07-01'), 
+         Date <= as.Date('2018-12-31')) %>%
+  select(Date, EMBIG = 'EMBIG Div')
+
 #############################################################################
 ### prepare portfolio performance dataframes ###
 #############################################################################
 
 # calculate portfolio weights for preferred model
-trading <- getPortfolios(model = 5)
+trading <- getPortfolios(model = 5, 
+                         trading_start = '2015-07-01', 
+                         trading_end = '2018-12-31')
 
 # combine lists
 portfolios <- lapply(
@@ -50,11 +59,11 @@ performance <- benchmark %>%
 
 ew_plot <- performance %>% ggplot() +
   aes(x = date, y = EMBIG) +
-  geom_line(color = 'tomato', size = 1) +
+  geom_line(color = 'black', size = 1) +
   geom_line(data = performance, 
             aes(x = date, y = EW),
-            color = 'steelblue') +
-  labs(x = '', y = '') +
+            color = 'tomato') +
+  labs(x = '', y = 'Daily return (%)') +
   ggtitle('Panel A: Equal-weighted portfolio') + 
   theme_classic() +
   theme(
@@ -68,11 +77,11 @@ ew_plot <- performance %>% ggplot() +
 
 mvp_plot <- performance %>% ggplot() +
   aes(x = date, y = EMBIG) +
-  geom_line(color = 'tomato', size = 1) +
+  geom_line(color = 'black', size = 1) +
   geom_line(data = performance, 
             aes(x = date, y = MVP),
-            color = 'steelblue') +
-  labs(x = '', y = '') +
+            color = 'tomato') +
+  labs(x = '', y = 'Daily return (%)') +
   ggtitle('Panel B: Minimum variance portfolio') + 
   theme_classic() +
   theme(
@@ -85,11 +94,11 @@ mvp_plot <- performance %>% ggplot() +
 
 eff_plot <- performance %>% ggplot() +
   aes(x = date, y = EMBIG) +
-  geom_line(color = 'tomato', size = 1) +
+  geom_line(color = 'black', size = 1) +
   geom_line(data = performance, 
             aes(x = date, y = EFF),
-            color = 'steelblue') +
-  labs(x = '', y = '') +
+            color = 'tomato') +
+  labs(x = '', y = 'Daily return (%)') +
   ggtitle('Panel C: Efficient portfolio') + 
   theme_classic() +
   theme(
@@ -103,11 +112,11 @@ eff_plot <- performance %>% ggplot() +
 
 eff_tc_plot <- performance %>% ggplot() +
   aes(x = date, y = EMBIG) +
-  geom_line(color = 'tomato', size = 1) +
+  geom_line(color = 'black', size = 1) +
   geom_line(data = performance, 
             aes(x = date, y = EFF_TC),
-            color = 'steelblue') +
-  labs(x = '', y = '') +
+            color = 'tomato') +
+  labs(x = '', y = 'Daily return (%)') +
   ggtitle('Panel D: Cost-optimal efficient portfolio') + 
   theme_classic() +
   theme(
@@ -150,9 +159,11 @@ wealth_plot <- wealth %>% select(date, starts_with("wealth")) %>%
   labs(x = '', y = 'Accumulated Wealth', color = 'Portfolio') + 
   theme_classic() +
   theme(
-    axis.text = element_text(size = 14), 
+    axis.title = element_text(size = 14), 
+    axis.text = element_text(size = 12), 
     strip.text = element_text(size=14),
-    legend.text = element_text(size=12),
+    legend.title = element_text(size=14),
+    legend.text = element_text(size=14),
     legend.position = 'bottom',
     strip.background = element_blank(),) + 
   scale_x_date(breaks = scales::breaks_pretty(10)) + 
@@ -169,17 +180,17 @@ wealth_plot <- wealth %>% select(date, starts_with("wealth")) %>%
 
 # excess return
 excess_wealth <- wealth %>%
-  mutate(excess_ew = wealth_ew - wealth_bench + 100,
-         excess_mvp = wealth_mvp - wealth_bench + 100,
-         excess_eff = wealth_eff - wealth_bench + 100,
-         excess_eff_tc = wealth_eff_tc - wealth_bench + 100) %>% 
+  mutate(excess_ew = wealth_ew - wealth_bench,
+         excess_mvp = wealth_mvp - wealth_bench,
+         excess_eff = wealth_eff - wealth_bench,
+         excess_eff_tc = wealth_eff_tc - wealth_bench) %>% 
   select(date, starts_with("excess")) %>%
   pivot_longer(cols = starts_with("excess"), names_to = "strategy", values_to = "excess")
 
 excess_wealth_plot <- excess_wealth %>%
   ggplot(aes(x = date, y = excess, color = strategy)) + 
   geom_line() +
-  labs(x = '', y = 'Excess Wealth', color = 'Portfolio') +
+  labs(x = '', y = 'Excess Wealth (%)', color = 'Portfolio') +
   theme_classic() +
   theme(
     axis.text = element_text(size = 12), 
@@ -250,11 +261,29 @@ performance %>% select(-date) %>% colMeans() * 250
 ##############################################################################
 ### COMPARISON OF MODELS  ###
 #############################################################################
-trading1 <- getPortfolios(model = 1)
-trading2 <- getPortfolios(model = 2)
-trading3 <- getPortfolios(model = 3)
-trading4 <- getPortfolios(model = 4)
-trading5 <- getPortfolios(model = 5)
+# ALTERNATIVE WINDOW!
+#trading_start = '2015-07-02', 
+#trading_end = '2018-12-31'
+
+# STANDARD TRADING WINDOW!
+#trading_start = '2019-01-02', 
+#trading_end = '2022-06-30'
+
+trading1 <- getPortfolios(model = 1, 
+                          trading_start = '2015-07-01', 
+                          trading_end = '2018-12-31')
+trading2 <- getPortfolios(model = 2, 
+                          trading_start = '2015-07-01', 
+                          trading_end = '2018-12-31')
+trading3 <- getPortfolios(model = 3, 
+                          trading_start = '2015-07-01', 
+                          trading_end = '2018-12-31')
+trading4 <- getPortfolios(model = 4, 
+                          trading_start = '2015-07-01', 
+                          trading_end = '2018-12-31')
+trading5 <- getPortfolios(model = 5, 
+                          trading_start = '2015-07-01', 
+                          trading_end = '2018-12-31')
 
 portfolio1 <- lapply(
   trading1,
@@ -350,16 +379,19 @@ for (i in 2:nrow(wealth_eff)) {
 }
 
 
-wealth_eff_plot <- wealth_eff %>% select(date, starts_with("wealth")) %>%
+wealth_eff_plot <- wealth_eff %>% 
+  select(date, starts_with("wealth")) %>%
   pivot_longer(cols = starts_with("wealth"), names_to = "strategy", values_to = "wealth") %>%
   ggplot(aes(x = date, y = wealth, color = strategy)) + 
   geom_line() +
   labs(x = '', y = 'Accumulated Wealth', color = 'Model') + 
   theme_classic() +
   theme(
+    axis.title = element_text(size = 14), 
     axis.text = element_text(size = 14), 
     strip.text = element_text(size=14),
-    legend.text = element_text(size=12),
+    legend.text = element_text(size=14),
+    legend.title = element_text(size=14),
     legend.position = 'bottom',
     strip.background = element_blank(),) + 
   scale_x_date(breaks = scales::breaks_pretty(10)) +
@@ -499,16 +531,16 @@ africa_w <- eff_weights %>% filter(Region == 'Africa') %>%
   geom_line(data = eff_weights %>% filter(Region == 'Africa'), 
             aes(x = Date, y = EFF_TC * 100),
             color = '#7CAE00', size = 1) +
-  labs(x = '', y = '') +
+  labs(x = '', y = 'Weight (%)') +
   ggtitle('Panel A: Africa') + 
   theme_classic() +
   theme(
     plot.title = element_text(hjust = 0.5),
     legend.position = 'none',
-    axis.text = element_text(size = 10), 
+    axis.text = element_text(size = 12), 
     strip.background = element_blank(),
-    strip.text = element_text(size=10)) + 
-  scale_x_date(breaks = scales::breaks_pretty(12))
+    strip.text = element_text(size=10))
+ # scale_x_date(breaks = scales::breaks_pretty(12))
 
 asia_w <- eff_weights %>% filter(Region == 'Asia') %>% 
   ggplot() +
@@ -517,16 +549,16 @@ asia_w <- eff_weights %>% filter(Region == 'Asia') %>%
   geom_line(data = eff_weights %>% filter(Region == 'Asia'), 
             aes(x = Date, y = EFF_TC * 100),
             color = '#7CAE00', size = 1) +
-  labs(x = '', y = '') +
+  labs(x = '', y = 'Weight (%)') +
   ggtitle('Panel B: Asia') + 
   theme_classic() +
   theme(
     plot.title = element_text(hjust = 0.5),
     legend.position = 'none',
-    axis.text = element_text(size = 10), 
+    axis.text = element_text(size = 12), 
     strip.background = element_blank(),
-    strip.text = element_text(size=10)) + 
-  scale_x_date(breaks = scales::breaks_pretty(12))
+    strip.text = element_text(size=10))
+  #scale_x_date(breaks = scales::breaks_pretty(12))
 
 europe_w <- eff_weights %>% filter(Region == 'Europe') %>% 
   ggplot() +
@@ -535,16 +567,16 @@ europe_w <- eff_weights %>% filter(Region == 'Europe') %>%
   geom_line(data = eff_weights %>% filter(Region == 'Europe'), 
             aes(x = Date, y = EFF_TC * 100),
             color = '#7CAE00', size = 1) +
-  labs(x = '', y = '') +
+  labs(x = '', y = 'Weight (%)') +
   ggtitle('Panel C: Europe') + 
   theme_classic() +
   theme(
     plot.title = element_text(hjust = 0.5),
     legend.position = 'none',
-    axis.text = element_text(size = 10), 
+    axis.text = element_text(size = 12), 
     strip.background = element_blank(),
-    strip.text = element_text(size=10)) + 
-  scale_x_date(breaks = scales::breaks_pretty(12))
+    strip.text = element_text(size=10))
+  #scale_x_date(breaks = scales::breaks_pretty(12))
 
 latam_w <- eff_weights %>% filter(Region == 'Latin America') %>% 
   ggplot() +
@@ -553,16 +585,16 @@ latam_w <- eff_weights %>% filter(Region == 'Latin America') %>%
   geom_line(data = eff_weights %>% filter(Region == 'Latin America'), 
             aes(x = Date, y = EFF_TC * 100),
             color = '#7CAE00', size = 1) +
-  labs(x = '', y = '') +
+  labs(x = '', y = 'Weight (%)') +
   ggtitle('Panel D: Latin America') + 
   theme_classic() +
   theme(
     plot.title = element_text(hjust = 0.5),
     legend.position = 'none',
-    axis.text = element_text(size = 10), 
+    axis.text = element_text(size = 12), 
     strip.background = element_blank(),
-    strip.text = element_text(size=10)) + 
-  scale_x_date(breaks = scales::breaks_pretty(12))
+    strip.text = element_text(size=10))  
+  #scale_x_date(breaks = scales::breaks_pretty(12))
 
 mideast_w <- eff_weights %>% filter(Region == 'Middle East') %>% 
   ggplot() +
@@ -571,16 +603,16 @@ mideast_w <- eff_weights %>% filter(Region == 'Middle East') %>%
   geom_line(data = eff_weights %>% filter(Region == 'Middle East'), 
             aes(x = Date, y = EFF_TC * 100),
             color = '#7CAE00', size = 1) +
-  labs(x = '', y = '') +
+  labs(x = '', y = 'Weight (%)') +
   ggtitle('Panel E: Middle East') + 
   theme_classic() +
   theme(
     plot.title = element_text(hjust = 0.5),
     legend.position = 'bottom',
-    axis.text = element_text(size = 10), 
+    axis.text = element_text(size = 12), 
     strip.background = element_blank(),
     strip.text = element_text(size=10)) + 
-  scale_x_date(breaks = scales::breaks_pretty(12)) +
+  #scale_x_date(breaks = scales::breaks_pretty(12)) +
   scale_color_manual(labels = c('Efficient', 
                                 'Cost-optimized'),
                      values = c('#F8766D', '#7CAE00'))

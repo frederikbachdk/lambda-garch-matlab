@@ -51,10 +51,11 @@ acf_plot <- function(x, region, lag.max = 30){
               color = 'chartreuse3',
               size = 1) + 
     scale_x_continuous(breaks = round(seq(0, lag.max, by = 2),1)) + 
+    scale_y_continuous(breaks = round(seq(-0.1, 0.4, by = 0.1),1)) +
     theme_classic() +
     ggtitle(paste0(region)) +
     xlab('Lag number') +
-    theme(text = element_text(color="black"),
-          axis.text=element_text(color="black"),
+    theme(text = element_text(color="black", size = 14),
+          axis.text=element_text(color="black", size = 14),
           plot.title = element_text(hjust = 0.5))
 }

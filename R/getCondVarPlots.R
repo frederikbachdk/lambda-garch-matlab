@@ -280,12 +280,13 @@ ggsave('condVar_MidEast.png', dpi = 'retina',
        path = 'plots/')
 
 
-# LATAM / MIDDLE EAST COVARIANCE
-condVar_tib %>% filter(grepl('Cov_LatAm_MidEast', model),
+# EUROPE / MIDDLE EAST COVARIANCE
+condVar_tib %>% filter(grepl('Cov_Europe_MidEast', model),
                        Date >= as.Date('2020-01-01'),
-                       Date <= as.Date('2020-06-30')) %>%
+                       Date <= as.Date('2020-12-30')) %>%
   ggplot() + aes(x = Date, y = condVar, color = model) + geom_line() +
   labs(x = '', y = 'Conditional Covariance') + 
+  xlim(as.Date('2020-01-01'), as.Date('2020-12-30')) +
   theme_classic() +
   scale_color_manual(values = c("#4682b4",
                                 "#1b98e0",
@@ -302,12 +303,15 @@ condVar_tib %>% filter(grepl('Cov_LatAm_MidEast', model),
   theme(
     axis.text = element_text(size = 16),
     axis.title = element_text(size = 16),
-    legend.text = element_text(size = 10),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
     strip.background = element_blank(),
     strip.text = element_text(size=16),
     legend.position = 'bottom',
   ) +
-  scale_x_date(breaks = scales::breaks_pretty(10))
+  scale_x_date(
+    date_labels = "%m-%y",
+    breaks = scales::breaks_pretty(10))
 
 ggsave('condCov_LatAm_MidEast.png', dpi = 'retina',
        path = 'plots/')
